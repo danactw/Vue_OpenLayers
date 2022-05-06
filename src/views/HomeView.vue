@@ -155,7 +155,8 @@ export default {
     const scaleLine = new ScaleLine({
       bar: true,
       text: true,
-      steps: 2
+      steps: 2,
+      minWidth: 100
     })
 
     const zoomSlider = new ZoomSlider()
@@ -203,7 +204,23 @@ export default {
 
 <style>
 .map {
-  width: 100%;
+  width: 98%;
   height: 600px;
+  margin: auto;
+}
+
+.MousePosition {
+  color: red;
+  position: absolute;
+  top: 40px;
+  right: 10px;
+}
+
+.ol-overviewmap {
+  margin-bottom: 50px;
+}
+
+.ol-rotate {
+  margin-right: 40px;
 }
 </style>
