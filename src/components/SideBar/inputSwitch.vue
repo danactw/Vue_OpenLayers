@@ -1,8 +1,8 @@
 <template>
   <div class="switch">
-    <input :id="layer" type="checkbox" :name="layerType" :value="layer" :checked="isChecked" v-model="isChecked">
+    <input :id="control" type="checkbox" :name="controlType" :value="control" :checked="isChecked" v-model="isChecked">
     <span class="slider round" @click="toggleSwitch"></span>
-    <label :for="layer"> {{ layer }} </label>
+    <label :for="control"> {{ control }} </label>
   </div>
 
 </template>
@@ -12,8 +12,8 @@ import { ref } from '@vue/reactivity'
 import { watchEffect } from '@vue/runtime-core'
 export default {
   props: {
-    layer: String,
-    layerType: String
+    control: String,
+    controlType: String
   },
   setup(props, content) {
     const isChecked = ref(true)
@@ -23,7 +23,7 @@ export default {
     }
 
     watchEffect(()=>{
-      content.emit('toggleMapControl', {show: isChecked.value, title: props.layer})
+      content.emit('toggleMapControl', {show: isChecked.value, title: props.control})
     })
 
     return { isChecked, toggleSwitch }

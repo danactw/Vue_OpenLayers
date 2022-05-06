@@ -7,20 +7,22 @@
       <div class="sidebar">
         <h2 @click="toggleLayerBtn=!toggleLayerBtn">Base Layer</h2>
         <div v-show="toggleLayerBtn" v-for="layer in layerGroup" :key="layer" class="groupContainer">
-          <InputRadio :layer="layer" layerType="baseLayer"/>
+          <InputRadio :layer="layer" layerType="baseLayer" @toggleBaseLayer="toggleBaseLayer" />
         </div>
         <h2 @click="toggleOptionBtn=!toggleOptionBtn">Layers</h2>
         <div v-show="toggleOptionBtn" v-for="layer in optionalLayers" :key="layer" class="groupContainer">
-          <InputCheckbox :layer="layer" layerType="optionalLayer" />
+          <InputCheckbox :layer="layer" layerType="optionalLayer" @toggleOptionalLayer="toggleOptionalLayer"/>
         </div>        
         <h2 @click="toggleControlBtn=!toggleControlBtn"  >Controls</h2>
         <div v-show="toggleControlBtn" v-for="control in mapControls" :key="control" class="groupContainer">
-          <InputSwitch :layer="control" layerType="mapControl" @toggleMapControl="toggleMapControl" />
+          <InputSwitch :control="control" controlType="mapControl" @toggleMapControl="toggleMapControl" />
         </div>
       </div>
     </div>
     <div class="grid2">
-      <router-view :mapControlProps="mapControlProps" />
+      <router-view :mapControlProps="mapControlProps"
+                   :baseLayerProps="baseLayerProps"
+                   :optionalLayerProps="optionalLayerProps"  />
     </div>
   </div>
 </template>
@@ -46,11 +48,24 @@ export default {
 
     const mapControlProps = ref(null)
 
+    const baseLayerProps = ref(null)
+
+    const optionalLayerProps = ref(null)
+
     const toggleMapControl = (e) => {
       mapControlProps.value = e
     }
 
-    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, layerGroup, optionalLayers, mapControls, mapControlProps, toggleMapControl }
+    const toggleBaseLayer = (e) => {
+      // console.log(e);
+      baseLayerProps.value = e
+    }
+
+    const toggleOptionalLayer = (e) => {
+      optionalLayerProps.value = e
+    }
+
+    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, layerGroup, optionalLayers, mapControls, baseLayerProps, optionalLayerProps, mapControlProps, toggleBaseLayer, toggleOptionalLayer, toggleMapControl }
   }
 }
 </script>

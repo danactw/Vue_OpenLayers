@@ -30,7 +30,9 @@ import {defaults} from 'ol/control';
 export default {
   name: "HomeView",
   props: {
-    mapControlProps: Object
+    mapControlProps: Object,
+    optionalLayerProps: Object,
+    baseLayerProps: Object
   },
   setup (props) {
     const mapContainer = shallowRef(null);
@@ -39,16 +41,16 @@ export default {
     // Base Layers
     const OSMStandard = new TileLayer({
       source: new OSM(),
-      visible: false,
-      title: 'OSMStandard'
+      visible: true,
+      title: 'OSM Standard'
     })
 
     const OSMHumanitarian =  new TileLayer({
       source: new OSM({
         url:'https://{a-c}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
       }),
-      visible: true,
-      title: 'OSMHumanitarian'
+      visible: false,
+      title: 'OSM Humanitarian'
     })
 
     const BingMap = new TileLayer({
@@ -57,7 +59,7 @@ export default {
         imagerySet: 'AerialWithLabels'
       }),
       visible: false,
-      title: 'BingMaps'
+      title: 'Bing Maps'
     })
 
     const CartoDBBase = new TileLayer({
@@ -66,28 +68,37 @@ export default {
         attributions: '@ CARTO'
       }),
       visible: false,
-      title: 'CartoDBBase'
+      title: 'CartoDB Base'
     })
 
-    const stamenWater = new TileLayer({
+    const StamenWater = new TileLayer({
       source: new Stamen({
         layer: 'watercolor'
       }),
       visible: true,
-      title: 'stamenWater'
+      title: 'Stamen Water'
     })
 
-    const baseLayers = ref([OSMStandard, OSMHumanitarian, BingMap, CartoDBBase, stamenWater])
+    const baseLayers = ref([OSMStandard, OSMHumanitarian, BingMap, CartoDBBase, StamenWater])
 
     const baseLayerGroup = new LayerGroup({
       layers: baseLayers.value
+    })
+
+    //Switch Logic for baseLayerGroup
+    watchEffect(() => {
+      baseLayerGroup.getLayers().forEach(layer => {
+        const layerTitle = layer.get('title')
+        const clickedBaseLayer = props.baseLayerProps.title.replace(/[{()}]/g, '')
+        layer.setVisible(layerTitle === clickedBaseLayer)
+      })
     })
 
     // Optional Layers
     const tileDebug = new TileLayer({
       source: new TileDebug(),
       visible: false, 
-      title: 'tileDebug'
+      title: 'Tile Debug'
     })
 
     const tileArcGIS = new TileLayer({
@@ -95,13 +106,24 @@ export default {
         url: 'https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Population_World/MapServer'
       }),
       visible: false,
-      title: 'tileArcGIS'
+      title: 'Tile ArcGIS'
     })
 
     const optionalLayers = ref([ tileDebug, tileArcGIS ])
 
     const optionalLayerGroup = new LayerGroup({
       layers: optionalLayers.value
+    })
+
+    //Switch Logic for optionalLayerGroup
+    watchEffect(() => {
+      const clickedOptionalLayer = props.optionalLayerProps.title.replace(/[{()}]/g, '')
+      const ckeckedOptionalLayer = props.optionalLayerProps.show
+      optionalLayerGroup.getLayers().forEach(layer => {
+        if (clickedOptionalLayer === layer.get('title')) {
+          ckeckedOptionalLayer ? layer.setVisible(true) : layer.setVisible(false)
+        }
+      })
     })
 
     // Controls
