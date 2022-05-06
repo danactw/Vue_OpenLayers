@@ -6,8 +6,8 @@
     <div class="grid1">
       <div class="sidebar">
         <h2 @click="toggleLayerBtn=!toggleLayerBtn">Base Layer</h2>
-        <div v-show="toggleLayerBtn" v-for="layer in layerGroup" :key="layer" class="groupContainer">
-          <InputRadio :layer="layer" layerType="baseLayer" @toggleBaseLayer="toggleBaseLayer" />
+        <div v-show="toggleLayerBtn">
+          <InputRadio :layerGroup="layerGroup" @toggleBaseLayer="toggleBaseLayer" />
         </div>
         <h2 @click="toggleOptionBtn=!toggleOptionBtn">Layers</h2>
         <div v-show="toggleOptionBtn" v-for="layer in optionalLayers" :key="layer" class="groupContainer">
@@ -57,7 +57,6 @@ export default {
     }
 
     const toggleBaseLayer = (e) => {
-      // console.log(e);
       baseLayerProps.value = e
     }
 

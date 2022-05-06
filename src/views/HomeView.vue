@@ -55,7 +55,7 @@ export default {
 
     const BingMap = new TileLayer({
       source: new BingMaps({
-        key: 'AnFlt2m8C2DyKF7W_oJe0LUJ-y9-Nj06ZK3bKK6RPcDm9GL1R0MW1KNgItZs32Rd',
+        key: 'Ak6hRbflYvuARcql-hA_RTu20jkC6UQGDi4PLkJ1vOHrD30DD-1et3-N3DSohoPA',
         imagerySet: 'AerialWithLabels'
       }),
       visible: false,
