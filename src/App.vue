@@ -6,16 +6,16 @@
     <div class="grid1">
       <div class="sidebar">
         <h2 @click="toggleLayerBtn=!toggleLayerBtn">Base Layer</h2>
-        <div v-show="toggleLayerBtn" v-for="layer in layerGroup" :key="layer">
+        <div v-show="toggleLayerBtn" v-for="layer in layerGroup" :key="layer" class="groupContainer">
           <InputRadio :layer="layer" layerType="baseLayer"/>
         </div>
         <h2 @click="toggleOptionBtn=!toggleOptionBtn">Layers</h2>
-        <div v-show="toggleOptionBtn" v-for="layer in optionalLayers" :key="layer">
+        <div v-show="toggleOptionBtn" v-for="layer in optionalLayers" :key="layer" class="groupContainer">
           <InputCheckbox :layer="layer" layerType="optionalLayer" />
         </div>        
         <h2 @click="toggleControlBtn=!toggleControlBtn"  >Controls</h2>
-        <div v-show="toggleControlBtn" v-for="control in mapControls" :key="control">
-          <InputCheckbox :layer="control" layerType="mapControl" />
+        <div v-show="toggleControlBtn" v-for="control in mapControls" :key="control" class="groupContainer">
+          <InputSwitch :layer="control" layerType="mapControl"/>
         </div>
       </div>
     </div>
@@ -29,9 +29,10 @@
 import { ref } from '@vue/reactivity';
 import InputCheckbox from "./components/SideBar/InputCheckbox.vue";
 import InputRadio from './components/SideBar/InputRadio.vue';
+import InputSwitch from './components/SideBar/inputSwitch.vue';
 
 export default {
-  components: { InputCheckbox, InputRadio },
+  components: { InputCheckbox, InputRadio, InputSwitch },
   setup() {
     const toggleLayerBtn = ref(false)
     const toggleOptionBtn = ref(false)
@@ -83,7 +84,7 @@ nav a.router-link-exact-active {
   overflow: scroll;
 }
 
-.sidebar div{
+.sidebar .groupContainer{
   text-align: start;
   padding: 10px;
 }

@@ -4,10 +4,13 @@
 </template>
 
 <script>
+
 export default {
   props: {
     layer: String,
     layerType: String
+  },
+  setup() {
   }
 }
 </script>
