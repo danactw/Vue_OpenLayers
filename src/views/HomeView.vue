@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref } from 'vue';
+import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -16,6 +16,7 @@ import BingMaps from 'ol/source/BingMaps';
 import TileDebug from 'ol/source/TileDebug';
 import TileArcGISRest from 'ol/source/TileArcGISRest';
 
+import * as olControl from 'ol/control';
 import FullScreen from 'ol/control/FullScreen';
 import MousePosition from 'ol/control/MousePosition';
 import OverviewMap from 'ol/control/OverviewMap';
@@ -28,7 +29,10 @@ import {defaults} from 'ol/control';
 
 export default {
   name: "HomeView",
-  setup () {
+  props: {
+    mapControlProps: Object
+  },
+  setup (props) {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
 
@@ -150,7 +154,25 @@ export default {
         controls: defaults({attribution: false}).extend(mapControls.value)
       }))
       map.value.addLayer(optionalLayerGroup)
+
+      watchEffect(()=> {
+        const clickedControl = props.mapControlProps.title.replace(/[{()}]/g, '')
+        if (props.mapControlProps.show) {
+          mapControls.value.forEach(control => {
+            if (control instanceof olControl[clickedControl]) {
+              map.value.addControl(control)
+            }
+          })
+        } else {
+          map.value.getControls().forEach( control => {
+            if (control instanceof olControl[clickedControl]) map.value.removeControl(control)
+          })
+        }
+      })
+
     })
+
+    
 
     return { map, mapContainer };
   }

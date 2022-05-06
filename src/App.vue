@@ -15,12 +15,12 @@
         </div>        
         <h2 @click="toggleControlBtn=!toggleControlBtn"  >Controls</h2>
         <div v-show="toggleControlBtn" v-for="control in mapControls" :key="control" class="groupContainer">
-          <InputSwitch :layer="control" layerType="mapControl"/>
+          <InputSwitch :layer="control" layerType="mapControl" @toggleMapControl="toggleMapControl" />
         </div>
       </div>
     </div>
     <div class="grid2">
-      <router-view />
+      <router-view :mapControlProps="mapControlProps" />
     </div>
   </div>
 </template>
@@ -42,9 +42,15 @@ export default {
 
     const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS' ]
 
-    const mapControls = ['attribution', 'fullScreen', 'mousePosition', 'overviewMap', 'scaleLine', 'zoomSlider', 'zoomExtent']
+    const mapControls = ['Attribution', 'FullScreen', 'MousePosition', 'OverviewMap', 'ScaleLine', 'ZoomSlider', 'ZoomToExtent']
 
-    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, layerGroup, optionalLayers, mapControls }
+    const mapControlProps = ref(null)
+
+    const toggleMapControl = (e) => {
+      mapControlProps.value = e
+    }
+
+    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, layerGroup, optionalLayers, mapControls, mapControlProps, toggleMapControl }
   }
 }
 </script>
