@@ -56,10 +56,11 @@ export default {
     const BingMap = new TileLayer({
       source: new BingMaps({
         key: 'Ak6hRbflYvuARcql-hA_RTu20jkC6UQGDi4PLkJ1vOHrD30DD-1et3-N3DSohoPA',
-        imagerySet: 'AerialWithLabels'
+        imagerySet: 'AerialWithLabelsOnDemand'
       }),
+      preload: Infinity,
       visible: false,
-      title: 'Bing Maps'
+      title: 'Bing Map'
     })
 
     const CartoDBBase = new TileLayer({
