@@ -20,6 +20,7 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Graticule from 'ol/layer/Graticule';
 import LayerGroup from 'ol/layer/Group';
+import TileWMS from 'ol/source/TileWMS';
 import VectorSource from 'ol/source/Vector';
 import { OSM, XYZ, Stamen, BingMaps, TileDebug, TileArcGISRest } from 'ol/source';
 import * as olControl from 'ol/control';
@@ -133,7 +134,30 @@ export default {
         wrapX: false,
         title: 'Graticule'
       })
-      const optionalLayers = ref([tileDebug, tileArcGIS, graticule ]);
+      // http://localhost:8080/geoserver/Vue_OpenLayers/wms?service=WMS&version=1.1.0&request=GetMap&layers=Vue_OpenLayers:POLYGON&bbox=-6.416015625,45.84410779560204,18.896484375,58.69977573144006&width=768&height=390&srs=EPSG:4326&styles=&format=application/openlayers
+
+      // EUMap from geoserver
+      const EUMapGeoServer = new TileLayer({
+        source: new TileWMS({
+          ratio: 1,
+          params: {
+            "SERVICE": "WMS",
+            "VERSION": "1.1.0",
+            // "REQUEST": "GetMap",
+            "LAYERS": "Vue_OpenLayers:POLYGON",
+            // "BBOX": "[-6.416015625, 45.84410779560204, 18.896484375, 58.69977573144006]",
+            // "WIDTH": "768",
+            // "HEIGHT": "390",
+            // "SRS": "EPSG:4326",
+            // "FORMAT": "application/openlayers"
+          },
+          serverType: "geoserver",
+          url: "http://localhost:8080/geoserver/Vue_OpenLayers/wms",
+        }),
+        visible: false,
+        title: "EUMap"
+      });
+      const optionalLayers = ref([tileDebug, tileArcGIS, graticule, EUMapGeoServer ]);
       const optionalLayerGroup = new LayerGroup({
           layers: optionalLayers.value
       });
