@@ -7,22 +7,30 @@
       <div class="sidebar">
         <h2 @click="toggleLayerBtn=!toggleLayerBtn">Base Layer</h2>
         <div v-show="toggleLayerBtn">
-          <InputRadio :layerGroup="layerGroup" @toggleBaseLayer="toggleBaseLayer" />
+          <InputRadio :items="layerGroup" itemCategory="BaseLayer" @toggleBaseLayer="toggleBaseLayer" />
         </div>
+
         <h2 @click="toggleOptionBtn=!toggleOptionBtn">Layers</h2>
         <div v-show="toggleOptionBtn" v-for="layer in optionalLayers" :key="layer" class="groupContainer">
           <InputCheckbox :layer="layer" layerType="optionalLayer" @toggleOptionalLayer="toggleOptionalLayer"/>
-        </div>        
-        <h2 @click="toggleControlBtn=!toggleControlBtn"  >Controls</h2>
+        </div>  
+
+        <h2 @click="toggleControlBtn=!toggleControlBtn">Controls</h2>
         <div v-show="toggleControlBtn" v-for="control in mapControls" :key="control" class="groupContainer">
           <InputSwitch :control="control" controlType="mapControl" @toggleMapControl="toggleMapControl" />
+        </div>
+
+        <h2 @click="togglePopupBtn=!togglePopupBtn">Popups</h2>
+        <div v-show="togglePopupBtn">
+          <InputRadio :items="popups" itemCategory="popup" @togglePopup="togglePopup"/>
         </div>
       </div>
     </div>
     <div class="grid2">
       <router-view :mapControlProps="mapControlProps"
                    :baseLayerProps="baseLayerProps"
-                   :optionalLayerProps="optionalLayerProps"  />
+                   :optionalLayerProps="optionalLayerProps"
+                   :popupProps="popupProps" />
     </div>
   </div>
 </template>
@@ -39,6 +47,7 @@ export default {
     const toggleLayerBtn = ref(false)
     const toggleOptionBtn = ref(false)
     const toggleControlBtn = ref(false)
+    const togglePopupBtn = ref(false)
 
     const layerGroup = ['OSM Standard', 'OSM Humanitarian', 'Bing Map', 'CartoDB Base', 'Stamen Water']
 
@@ -46,11 +55,15 @@ export default {
 
     const mapControls = ['Attribution', 'FullScreen', 'MousePosition', 'OverviewMap', 'ScaleLine', 'ZoomSlider', 'ZoomToExtent']
 
+    const popups = ['None', 'Lon & Lat']
+
     const mapControlProps = ref(null)
 
     const baseLayerProps = ref(null)
 
     const optionalLayerProps = ref(null)
+
+    const popupProps = ref(null)
 
     const toggleMapControl = (e) => {
       mapControlProps.value = e
@@ -64,10 +77,14 @@ export default {
       optionalLayerProps.value = e
     }
 
-    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn,
-            layerGroup, optionalLayers, mapControls, 
-            baseLayerProps, optionalLayerProps, mapControlProps, 
-            toggleBaseLayer, toggleOptionalLayer, toggleMapControl }
+    const togglePopup = (e) => {
+      popupProps.value = e
+    }
+
+    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, togglePopupBtn,
+            layerGroup, optionalLayers, mapControls, popups,
+            baseLayerProps, optionalLayerProps, mapControlProps, popupProps, 
+            toggleBaseLayer, toggleOptionalLayer, toggleMapControl, togglePopup }
   }
 }
 </script>

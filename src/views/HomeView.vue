@@ -6,6 +6,9 @@
     <CustomizationBtn action="Zoom To Taiwan" @click="zoomToTaiwan"/>
     <CustomizationBtn action="Center on Taipei" @click="centerOnTaipei"/>
   </div>
+  <div class="overlayContainer" id="overlayContainer">
+    <div class="overlay" v-for="overlayContent in overlayContents" :key="overlayContent">{{ overlayContent }}</div>
+  </div>
 </template>
 
 <script>
@@ -25,15 +28,17 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import { createStringXY } from 'ol/coordinate';
+import Overlay from 'ol/Overlay';
 import CustomizationBtn from '@/components/Customization/CustomizationBtn.vue';
 
 export default {
     name: "HomeView",
     components: { CustomizationBtn },
     props: {
-        mapControlProps: Object,
-        optionalLayerProps: Object,
-        baseLayerProps: Object
+      mapControlProps: Object,
+      optionalLayerProps: Object,
+      baseLayerProps: Object,
+      popupProps: Object
     },
     setup(props) {
       const mapContainer = shallowRef(null);
@@ -394,6 +399,15 @@ export default {
         view.centerOn(pointTaipei.getCoordinates(), map.value.getSize(), [570,300]);
       }
 
+      const overlayContainer = document.querySelector('.overlayContainer')
+
+      const overlayLayer = new Overlay({
+        element: overlayContainer,
+        positioning:'bottom-left',
+      })
+
+      const overlayContents = ref({})
+
       onMounted(() => {
         map.value = markRaw(new Map({
           target: "map",
@@ -405,6 +419,7 @@ export default {
 
         map.value.addLayer(optionalLayerGroup);
         map.value.addLayer(geoVectorLayer);
+        map.value.addOverlay(overlayLayer)
 
         watchEffect(() => {
           const clickedControl = props.mapControlProps.title.replace(/[{()}]/g, "");
@@ -423,12 +438,32 @@ export default {
           }
         });
 
-        map.value.on('click', (e) => {
-          console.log(e.coordinate);
+        watchEffect(() => {
+          const overlayType = props.popupProps.title
+          if (overlayType !== 'None') {
+            map.value.on('click', (e) => {
+              if (overlayType !== 'None') {
+                const clickedCoord = e.coordinate.map(item=>item.toFixed(2))
+                overlayContents.value = {
+                  lon: `Longitude: ${clickedCoord[0]}`,
+                  lat: `Latitude: ${clickedCoord[1]}`
+                }
+                overlayLayer.setPosition(clickedCoord)
+              }
+            })
+          } else {
+            overlayLayer.setPosition(undefined)
+            map.value.removeOverlay(overlayLayer)
+            overlayContents.value = {}
+          } 
         })
+
+        // map.value.on('click', (e) => {
+        //   console.log(e.coordinate);
+        // })
       });
 
-      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei };
+      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei, overlayContents };
     }
 };
 </script>
@@ -453,5 +488,20 @@ export default {
 
 .ol-rotate {
   margin-right: 40px;
+}
+
+.ol-popup {
+    position: absolute;
+    background-color: white;
+    -webkit-filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #cccccc;
+    bottom: 12px;
+    left: -50px;
+}
+.popup-content {
+    width: 400px;
 }
 </style>

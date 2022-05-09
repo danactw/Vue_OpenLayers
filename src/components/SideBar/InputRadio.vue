@@ -1,7 +1,7 @@
 <template>
-  <div v-for="layer in layerGroup" :key="layer" class="groupContainer">
-    <input :id="layer" type="radio" name="baseLayer" :value="layer"  v-model="layerRef">
-    <label :for="layer"> {{ layer }} </label><br>
+  <div v-for="item in items" :key="item" class="groupContainer">
+    <input :id="item" type="radio" :name="itemCategory" :value="item"  v-model="itemRef">
+    <label :for="item"> {{ item }} </label><br>
   </div>
 </template>
 
@@ -10,17 +10,21 @@ import { ref } from '@vue/reactivity'
 import { watchEffect } from '@vue/runtime-core'
 export default {
   props: {
-    layerGroup: Array
+    items: Array,
+    itemCategory: String
   },
-  emits: ['toggleBaseLayer'],
+  emits: ['toggleBaseLayer', 'togglePopup'],
   setup(props, content) {
-    const layerRef = ref('OSM Standard')
+    const itemRef = ref(props.items[0])
 
     watchEffect(()=> {
-      content.emit('toggleBaseLayer', {title: layerRef.value})
+      content.emit('toggleBaseLayer', {title: itemRef.value})
+    })
+    watchEffect(()=> {
+      content.emit('togglePopup', {title: itemRef.value})
     })
 
-    return { layerRef }
+    return { itemRef }
   }
 }
 </script>
