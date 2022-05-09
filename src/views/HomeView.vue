@@ -3,7 +3,8 @@
   <div class="customizedBtnGroup">
     <CustomizationBtn action="Zoom Out" @click="zoomOut"/>
     <CustomizationBtn action="Zoom In" @click="zoomIn"/>
-    <CustomizationBtn action="zoom To Taiwan" @click="zoomToTaiwan"/>
+    <CustomizationBtn action="Zoom To Taiwan" @click="zoomToTaiwan"/>
+    <CustomizationBtn action="Center on Taipei" @click="centerOnTaipei"/>
   </div>
 </template>
 
@@ -12,9 +13,8 @@ import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
-// import Circle from 'ol/geom/Circle';
-// import Feature from 'ol/Feature';
 import { Fill, Stroke, Style} from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import LayerGroup from 'ol/layer/Group';
@@ -93,7 +93,7 @@ export default {
       const baseLayerGroup = new LayerGroup({
           layers: baseLayers.value
       });
-      //Switch Logic for baseLayerGroup
+      // Switch logic for baseLayerGroup
       watchEffect(() => {
         baseLayerGroup.getLayers().forEach(layer => {
           const layerTitle = layer.get("title");
@@ -101,6 +101,7 @@ export default {
           layer.setVisible(layerTitle === clickedBaseLayer);
         });
       });
+
       // Optional Layers
       const tileDebug = new TileLayer({
         source: new TileDebug(),
@@ -128,6 +129,7 @@ export default {
           }
         });
       });
+      
       // Controls
       const attribution = new Attribution({
         collapsible: true
@@ -149,7 +151,8 @@ export default {
         ],
         tipLabel: "Toggle Overview",
         rotateWithView: true,
-      });
+      })
+
       const scaleLine = new ScaleLine({
         bar: true,
         text: true,
@@ -160,6 +163,29 @@ export default {
       const zoomExtent = new ZoomToExtent();
       const mapControls = ref([attribution, fullScreen, mousePosition, overviewMap, scaleLine, zoomSlider, zoomExtent]);
 
+      const geojsonStyle = {
+        'Point': new Style({
+          image: new CircleStyle({
+            radius: 5,
+            fill: null,
+            stroke: new Stroke({color: 'red', width: 1}),
+          }),
+        }),
+        'Polygon': new Style({
+          stroke: new Stroke({
+            color: 'blue',
+            lineDash: [4],
+            width: 3,
+          }),
+          fill: new Fill({
+            color: 'rgba(0, 0, 255, 0.1)',
+          }),
+        }),
+      }
+      const styleFunction = function (feature) {
+        return geojsonStyle[feature.getGeometry().getType()];
+      };
+
       const geojsonObject = {
         'type': 'FeatureCollection',
         'crs': {
@@ -169,6 +195,13 @@ export default {
           },
         },
         'features': [
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [121.51946593657708, 25.046052401824163],
+            },
+          },
           {
             'type': 'Feature',
             'geometry': {
@@ -334,21 +367,18 @@ export default {
 
       const geoVectorLayer = new VectorLayer({
         source: geoVectorSource,
-        style: new Style({
-          stroke: new Stroke({
-            color: 'blue',
-            lineDash: [4],
-            width: 3,
-          }),
-          fill: new Fill({
-            color: 'rgba(0, 0, 255, 0.1)',
-          }),
-        }),
+        style: styleFunction
       });
 
       const zoomToTaiwan = () => {
-        const polygonTaiwan = geoVectorSource.getFeatures()[0].getGeometry()
+        const polygonTaiwan = geoVectorSource.getFeatures()[1].getGeometry()
         view.fit(polygonTaiwan, {padding: [170, 50, 30, 150]})
+      }
+
+      const centerOnTaipei = () => {
+        const pointTaipei = geoVectorSource.getFeatures()[0].getGeometry()
+        view.fit(pointTaipei, {padding: [170, 50, 30, 150], maxZoom: 12});
+        view.centerOn(pointTaipei.getCoordinates(), map.value.getSize(), [570,300]);
       }
 
       onMounted(() => {
@@ -359,8 +389,10 @@ export default {
           keyboardEventTarget: document,
           controls: defaults({ attribution: false }).extend(mapControls.value)
         }));
+
         map.value.addLayer(optionalLayerGroup);
         map.value.addLayer(geoVectorLayer);
+
         watchEffect(() => {
           const clickedControl = props.mapControlProps.title.replace(/[{()}]/g, "");
           if (props.mapControlProps.show) {
@@ -377,8 +409,13 @@ export default {
             });
           }
         });
+
+        map.value.on('click', (e) => {
+          console.log(e.coordinate);
+        })
       });
-      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan };
+
+      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei };
     }
 };
 </script>
