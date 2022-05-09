@@ -13,17 +13,18 @@ import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
-import { Fill, Stroke, Style} from 'ol/style';
-import CircleStyle from 'ol/style/Circle';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import Graticule from 'ol/layer/Graticule';
 import LayerGroup from 'ol/layer/Group';
-import { OSM, XYZ, Stamen, BingMaps, TileDebug, TileArcGISRest } from 'ol/source';
 import VectorSource from 'ol/source/Vector';
+import { OSM, XYZ, Stamen, BingMaps, TileDebug, TileArcGISRest } from 'ol/source';
 import * as olControl from 'ol/control';
 import { defaults, FullScreen, MousePosition, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent, Attribution } from 'ol/control';
-import { createStringXY } from 'ol/coordinate';
 import GeoJSON from 'ol/format/GeoJSON';
+import { Fill, Stroke, Style} from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
+import { createStringXY } from 'ol/coordinate';
 import CustomizationBtn from '@/components/Customization/CustomizationBtn.vue';
 
 export default {
@@ -115,7 +116,19 @@ export default {
         visible: false,
         title: "Tile ArcGIS"
       });
-      const optionalLayers = ref([tileDebug, tileArcGIS ]);
+      const graticule = new Graticule({
+        // the style to use for the lines, optional.
+        strokeStyle: new Stroke({
+          color: 'rgba(255,120,0,0.9)',
+          width: 2,
+          lineDash: [0.5, 4],
+        }),
+        visible: false,
+        showLabels: true,
+        wrapX: false,
+        title: 'Graticule'
+      })
+      const optionalLayers = ref([tileDebug, tileArcGIS, graticule ]);
       const optionalLayerGroup = new LayerGroup({
           layers: optionalLayers.value
       });

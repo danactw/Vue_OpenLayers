@@ -42,7 +42,7 @@ export default {
 
     const layerGroup = ['OSM Standard', 'OSM Humanitarian', 'Bing Map', 'CartoDB Base', 'Stamen Water']
 
-    const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS' ]
+    const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS', 'Graticule' ]
 
     const mapControls = ['Attribution', 'FullScreen', 'MousePosition', 'OverviewMap', 'ScaleLine', 'ZoomSlider', 'ZoomToExtent']
 
