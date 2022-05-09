@@ -64,7 +64,10 @@ export default {
       optionalLayerProps.value = e
     }
 
-    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, layerGroup, optionalLayers, mapControls, baseLayerProps, optionalLayerProps, mapControlProps, toggleBaseLayer, toggleOptionalLayer, toggleMapControl }
+    return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn,
+            layerGroup, optionalLayers, mapControls, 
+            baseLayerProps, optionalLayerProps, mapControlProps, 
+            toggleBaseLayer, toggleOptionalLayer, toggleMapControl }
   }
 }
 </script>
