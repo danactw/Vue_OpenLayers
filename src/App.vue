@@ -1,6 +1,7 @@
 <template>
   <nav>
     <router-link to="/">Home</router-link> |
+    <!-- <router-link to="/basemap">BaseMap</router-link> | -->
   </nav>
   <div class="gridContainer">
     <div class="grid1">
@@ -51,7 +52,7 @@ export default {
 
     const layerGroup = ['OSM Standard', 'OSM Humanitarian', 'Bing Map', 'CartoDB Base', 'Stamen Water']
 
-    const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS', 'Graticule' ]
+    const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS', 'Graticule', 'EUMap' ]
 
     const mapControls = ['Attribution', 'FullScreen', 'MousePosition', 'OverviewMap', 'ScaleLine', 'ZoomSlider', 'ZoomToExtent']
 
