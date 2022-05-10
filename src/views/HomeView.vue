@@ -25,11 +25,10 @@ import { OSM, XYZ, Stamen, BingMaps, TileDebug, TileArcGISRest } from 'ol/source
 import * as olControl from 'ol/control';
 import { defaults, FullScreen, MousePosition, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent, Attribution } from 'ol/control';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Fill, Stroke, Style} from 'ol/style';
-import CircleStyle from 'ol/style/Circle';
+import { Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 // import RegularShape from 'ol/style/RegularShape';
 import { createStringXY } from 'ol/coordinate';
-import {bbox as bboxStrategy} from 'ol/loadingstrategy';
+import { bbox as bboxStrategy } from 'ol/loadingstrategy';
 import Overlay from 'ol/Overlay';
 import CustomizationBtn from '@/components/Customization/CustomizationBtn.vue';
 

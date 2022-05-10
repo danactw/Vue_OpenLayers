@@ -1,6 +1,7 @@
 <template>
   <nav>
     <router-link to="/">Home</router-link> |
+    <router-link to="/clustermap">ClusterMap</router-link> |
     <!-- <router-link to="/basemap">BaseMap</router-link> | -->
   </nav>
   <div class="gridContainer">
