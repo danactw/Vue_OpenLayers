@@ -11,6 +11,9 @@
       <small>(the value must be less than the value of the distance)</small>
     </div>
   </form>
+  <div class="overlayContainer" ref="overlayContainer">
+    <div class="overlayContent" v-for="coor in currentCoordinate" :key="coor">{{ coor }}</div>
+  </div>
 </template>
 
 <script>
@@ -24,6 +27,8 @@ import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import { boundingExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
+import Overlay from 'ol/Overlay';
+import { toLonLat } from 'ol/proj';
 
 export default {
   setup() {
@@ -31,6 +36,9 @@ export default {
     const map = shallowRef(null);
     const minDistance = ref(20)
     const distance = ref(70)
+    const currentCoordinate = ref({})
+    const overlayContainer = ref(null)
+    const overlay = ref(null)
 
     const count = 2000;
     const features = new Array(count);
@@ -103,7 +111,18 @@ export default {
         }),
       }))
 
+      // Overlay
+      overlay.value = new Overlay({ 
+        element: overlayContainer.value,
+        autoPan: true,
+        autoPanAnimation: { 
+          duration: 250 
+        } 
+      }) 
+      map.value.addOverlay(overlay.value)
+
       map.value.on('click', (e) => {
+        overlay.value.setPosition(undefined) 
         clusters.getFeatures(e.pixel).then((clickedFeatures) => {
           if (clickedFeatures.length) {
             const features = clickedFeatures[0].get('features');
@@ -114,15 +133,22 @@ export default {
               map.value.getView().fit(extent, {duration: 1000, padding: [50, 50, 50, 50], maxZoom: 4});
             } else if (features.length > 10) {
               map.value.getView().fit(extent, {duration: 1000, padding: [50, 50, 50, 50], maxZoom: 10});
-            } else {
+            } else if (features.length >= 2){
               map.value.getView().fit(extent, {duration: 1000, padding: [50, 50, 50, 50]});
+            } else {
+              const coordinate = e.coordinate
+              const lonLat = toLonLat(coordinate).map(item=>item.toFixed(2))
+              currentCoordinate.value = {Long: `Longitude: ${lonLat[0]}`, Lat: `Latitude: ${lonLat[1]}`}  
+              overlay.value.setPosition(coordinate) 
             }
           }
         });
       });
+
+      
     })
 
-  return { map, mapContainer, distance, minDistance }
+  return { map, mapContainer, distance, minDistance, currentCoordinate, overlayContainer }
 }
 }
 </script>
@@ -135,6 +161,16 @@ export default {
 }
 
 .clusterForm {
+  text-align: start;
+}
+
+.overlayContainer {
+  background-color: rgb(255, 230, 179);
+  border-radius: 10px;
+  padding: 5px;
+}
+
+.overlayContent {
   text-align: start;
 }
 </style>
