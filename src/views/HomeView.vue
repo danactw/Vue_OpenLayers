@@ -6,7 +6,7 @@
     <CustomizationBtn action="Zoom To Taiwan" @click="zoomToTaiwan"/>
     <CustomizationBtn action="Center on Taipei" @click="centerOnTaipei"/>
   </div>
-  <div class="overlayContainer" id="overlayContainer">
+  <div class="overlayContainer" ref="overlayContainer">
     <div class="overlay" v-for="overlayContent in overlayContents" :key="overlayContent">{{ overlayContent }}</div>
   </div>
 </template>
@@ -20,7 +20,6 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Graticule from 'ol/layer/Graticule';
 import LayerGroup from 'ol/layer/Group';
-import TileWMS from 'ol/source/TileWMS';
 import VectorSource from 'ol/source/Vector';
 import { OSM, XYZ, Stamen, BingMaps, TileDebug, TileArcGISRest } from 'ol/source';
 import * as olControl from 'ol/control';
@@ -28,8 +27,10 @@ import { defaults, FullScreen, MousePosition, OverviewMap, ScaleLine, ZoomSlider
 import GeoJSON from 'ol/format/GeoJSON';
 import { Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
+// import RegularShape from 'ol/style/RegularShape';
 import { createStringXY } from 'ol/coordinate';
 import Overlay from 'ol/Overlay';
+import {bbox as bboxStrategy} from 'ol/loadingstrategy';
 import CustomizationBtn from '@/components/Customization/CustomizationBtn.vue';
 
 export default {
@@ -44,6 +45,7 @@ export default {
     setup(props) {
       const mapContainer = shallowRef(null);
       const map = shallowRef(null);
+      const overlayContainer = ref(null)
 
       // View
       const view = new View({
@@ -134,29 +136,68 @@ export default {
         wrapX: false,
         title: 'Graticule'
       })
-      // http://localhost:8080/geoserver/Vue_OpenLayers/wms?service=WMS&version=1.1.0&request=GetMap&layers=Vue_OpenLayers:POLYGON&bbox=-6.416015625,45.84410779560204,18.896484375,58.69977573144006&width=768&height=390&srs=EPSG:4326&styles=&format=application/openlayers
+
+      const EUMapStyle = () => {
+        
+      }
+
 
       // EUMap from geoserver
-      const EUMapGeoServer = new TileLayer({
-        source: new TileWMS({
-          ratio: 1,
-          params: {
-            "SERVICE": "WMS",
-            "VERSION": "1.1.0",
-            // "REQUEST": "GetMap",
-            "LAYERS": "Vue_OpenLayers:POLYGON",
-            // "BBOX": "[-6.416015625, 45.84410779560204, 18.896484375, 58.69977573144006]",
-            // "WIDTH": "768",
-            // "HEIGHT": "390",
-            // "SRS": "EPSG:4326",
-            // "FORMAT": "application/openlayers"
-          },
-          serverType: "geoserver",
-          url: "http://localhost:8080/geoserver/Vue_OpenLayers/wms",
-        }),
+
+      // const EUMapSource = new VectorSource({
+      //   format: new GeoJSON(),
+      //   url: function () {
+      //     return (
+      //       'http://localhost:8080/geoserver/Vue_OpenLayers/ows?service=WFS&' +
+      //       'version=1.0.0&request=GetFeature&typename=Vue_OpenLayers:POLYGON&' +
+      //       'maxFeatures=50&outputFormat=application/json&'
+      //     );
+      //   },
+      //   strategy: bboxStrategy,
+      // })
+
+      // http://localhost:8080/geoserver/Vue_OpenLayers/ows?service=WFS&
+      // version=1.0.0&request=GetFeature&typeName=Vue_OpenLayers%3APOLYGON&maxFeatures=50&outputFormat=application%2Fjson
+
+
+      var EUMapSource = new VectorSource({
+        format: new GeoJSON(),
+        loader: function(extent, resolution, projection, success, failure) {
+          var proj = projection.getCode();
+          var url = 'http://localhost:8080/geoserver/Vue_OpenLayers/ows?service=WFS&' +
+              'version=1.0.0&request=GetFeature&typeName=Vue_OpenLayers:APOLYGON&' +
+              'outputFormat=application/json&srsname=' + proj + '&' +
+              'bbox=' + extent.join(',') + ',' + proj;
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', url);
+          var onError = function() {
+            EUMapSource.removeLoadedExtent(extent);
+            failure();
+          }
+          xhr.onerror = onError;
+          xhr.onload = function() {
+            if (xhr.status == 200) {
+              var features = EUMapSource.getFormat().readFeatures(xhr.responseText);
+              EUMapSource.addFeatures(features);
+              success(features);
+            } else {
+              onError();
+            }
+          }
+          xhr.send();
+        },
+        strategy: bboxStrategy
+      });
+
+      const EUMapGeoServer = new VectorLayer({
+        source: EUMapSource,
+        style: EUMapStyle,
         visible: false,
         title: "EUMap"
       });
+
+      // console.log(EUMapSource.getFeatures());
+
       const optionalLayers = ref([tileDebug, tileArcGIS, graticule, EUMapGeoServer ]);
       const optionalLayerGroup = new LayerGroup({
           layers: optionalLayers.value
@@ -205,6 +246,7 @@ export default {
       const zoomExtent = new ZoomToExtent();
       const mapControls = ref([attribution, fullScreen, mousePosition, overviewMap, scaleLine, zoomSlider, zoomExtent]);
 
+      // GeoJSON (Zoom to Taiwan and Center on Taipei)
       const geojsonStyle = {
         'Point': new Style({
           image: new CircleStyle({
@@ -227,7 +269,6 @@ export default {
       const styleFunction = function (feature) {
         return geojsonStyle[feature.getGeometry().getType()];
       };
-
       const geojsonObject = {
         'type': 'FeatureCollection',
         'crs': {
@@ -400,33 +441,27 @@ export default {
           },
         ],
       };
-
       const geoVectorSource = new VectorSource({
         features: new GeoJSON().readFeatures(geojsonObject),
       });
-
       // geoVectorSource.addFeature(new Feature(new Circle([5e6, 7e6], 1e6)));
-
       const geoVectorLayer = new VectorLayer({
         source: geoVectorSource,
         style: styleFunction
       });
-
       const zoomToTaiwan = () => {
         const polygonTaiwan = geoVectorSource.getFeatures()[1].getGeometry()
         view.fit(polygonTaiwan, {padding: [170, 50, 30, 150]})
       }
-
       const centerOnTaipei = () => {
         const pointTaipei = geoVectorSource.getFeatures()[0].getGeometry()
         view.fit(pointTaipei, {padding: [170, 50, 30, 150], maxZoom: 12});
         view.centerOn(pointTaipei.getCoordinates(), map.value.getSize(), [570,300]);
       }
 
-      const overlayContainer = document.querySelector('.overlayContainer')
-
+      // Overlay
       const overlayLayer = new Overlay({
-        element: overlayContainer,
+        element: overlayContainer.value,
         positioning:'bottom-left',
       })
 
@@ -482,12 +517,14 @@ export default {
           } 
         })
 
+
+
         // map.value.on('click', (e) => {
         //   console.log(e.coordinate);
         // })
       });
 
-      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei, overlayContents };
+      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei, overlayContents, overlayContainer };
     }
 };
 </script>
