@@ -1,18 +1,18 @@
 <template>
   <div id="map" class="map" ref="mapContainer"></div>
+  <div class="overlayContainer" ref="overlayContainer">
+    <div class="overlayContent">{{ currentCoordinate }}</div>
+  </div>
   <div class="customizedBtnGroup">
     <CustomizationBtn action="Zoom Out" @click="zoomOut"/>
     <CustomizationBtn action="Zoom In" @click="zoomIn"/>
     <CustomizationBtn action="Zoom To Taiwan" @click="zoomToTaiwan"/>
     <CustomizationBtn action="Center on Taipei" @click="centerOnTaipei"/>
   </div>
-  <div class="overlayContainer" ref="overlayContainer">
-    <div class="overlay" v-for="overlayContent in overlayContents" :key="overlayContent">{{ overlayContent }}</div>
-  </div>
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
+import { shallowRef, onMounted, ref, watchEffect, watch } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -29,8 +29,8 @@ import { Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 // import RegularShape from 'ol/style/RegularShape';
 import { createStringXY } from 'ol/coordinate';
-import Overlay from 'ol/Overlay';
 import {bbox as bboxStrategy} from 'ol/loadingstrategy';
+import Overlay from 'ol/Overlay';
 import CustomizationBtn from '@/components/Customization/CustomizationBtn.vue';
 
 export default {
@@ -45,7 +45,9 @@ export default {
     setup(props) {
       const mapContainer = shallowRef(null);
       const map = shallowRef(null);
+      const currentCoordinate = ref('')
       const overlayContainer = ref(null)
+      const overlay = ref(null)
 
       // View
       const view = new View({
@@ -459,27 +461,19 @@ export default {
         view.centerOn(pointTaipei.getCoordinates(), map.value.getSize(), [570,300]);
       }
 
-      // Overlay
-      const overlayLayer = new Overlay({
-        element: overlayContainer.value,
-        positioning:'bottom-left',
-      })
-
-      const overlayContents = ref({})
-
       onMounted(() => {
-        map.value = markRaw(new Map({
+        map.value = new Map({
           target: "map",
           view: view,
           layers: [baseLayerGroup],
           keyboardEventTarget: document,
-          controls: defaults({ attribution: false }).extend(mapControls.value)
-        }));
+          controls: defaults({ attribution: false }).extend(mapControls.value),
+        })
 
         map.value.addLayer(optionalLayerGroup);
         map.value.addLayer(geoVectorLayer);
-        map.value.addOverlay(overlayLayer)
 
+        // for map controls
         watchEffect(() => {
           const clickedControl = props.mapControlProps.title.replace(/[{()}]/g, "");
           if (props.mapControlProps.show) {
@@ -497,34 +491,30 @@ export default {
           }
         });
 
-        watchEffect(() => {
-          const overlayType = props.popupProps.title
-          if (overlayType !== 'None') {
-            map.value.on('click', (e) => {
-              if (overlayType !== 'None') {
-                const clickedCoord = e.coordinate.map(item=>item.toFixed(2))
-                overlayContents.value = {
-                  lon: `Longitude: ${clickedCoord[0]}`,
-                  lat: `Latitude: ${clickedCoord[1]}`
-                }
-                overlayLayer.setPosition(clickedCoord)
-              }
+        // Overlay
+        overlay.value = new Overlay({ 
+          element: overlayContainer.value,
+          autoPan: true,
+          autoPanAnimation: { 
+            duration: 250 
+          } 
+        }) 
+        watch(()=> props.popupProps.title, () => {
+          if (props.popupProps.title !== "None") {
+            currentCoordinate.value = ''
+            map.value.addOverlay(overlay.value)
+            map.value.on('click', e => {
+              const coordinate = e.coordinate
+              currentCoordinate.value = coordinate  
+              overlay.value.setPosition(coordinate) 
             })
           } else {
-            overlayLayer.setPosition(undefined)
-            map.value.removeOverlay(overlayLayer)
-            overlayContents.value = {}
-          } 
+            map.value.removeOverlay(overlay.value)
+          }
         })
-
-
-
-        // map.value.on('click', (e) => {
-        //   console.log(e.coordinate);
-        // })
       });
 
-      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei, overlayContents, overlayContainer };
+      return { map, mapContainer, zoomOut, zoomIn, zoomToTaiwan, centerOnTaipei, currentCoordinate, overlayContainer };
     }
 };
 </script>
@@ -551,18 +541,4 @@ export default {
   margin-right: 40px;
 }
 
-.ol-popup {
-    position: absolute;
-    background-color: white;
-    -webkit-filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
-    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #cccccc;
-    bottom: 12px;
-    left: -50px;
-}
-.popup-content {
-    width: 400px;
-}
 </style>
