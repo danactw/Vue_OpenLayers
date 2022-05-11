@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ClusterMap from '../views/ClusterMap.vue'
+import VectorMap from '../views/VectorMap.vue'
 import BaseMap from '../views/BaseMap.vue'
 
 const routes = [
@@ -13,6 +14,11 @@ const routes = [
     path: '/clustermap',
     name: 'ClusterMap',
     component: ClusterMap
+  },
+  {
+    path: '/vectormap',
+    name: 'VectorMap',
+    component: VectorMap
   },
   {
     path: '/basemap',
