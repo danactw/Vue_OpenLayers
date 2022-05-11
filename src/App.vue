@@ -1,12 +1,12 @@
 <template>
   <nav>
     <router-link to="/">Home</router-link> |
-    <router-link to="/clustermap">ClusterMap</router-link> |
+    <router-link to="/clustermap">Cluster</router-link> |
     <!-- <router-link to="/basemap">BaseMap</router-link> | -->
   </nav>
   <div class="gridContainer">
     <div class="grid1">
-      <div class="sidebar">
+      <div class="sidebar" v-show="currentRoute==='home'">
         <h2 @click="toggleLayerBtn=!toggleLayerBtn">Base Layer</h2>
         <div v-show="toggleLayerBtn">
           <InputRadio :items="layerGroup" itemCategory="BaseLayer" @toggleBaseLayer="toggleBaseLayer" />
@@ -29,10 +29,12 @@
       </div>
     </div>
     <div class="grid2">
-      <router-view :mapControlProps="mapControlProps"
-                   :baseLayerProps="baseLayerProps"
-                   :optionalLayerProps="optionalLayerProps"
-                   :popupProps="popupProps" />
+      <router-view v-if="currentRoute==='home'"
+        :mapControlProps="mapControlProps"
+        :baseLayerProps="baseLayerProps"
+        :optionalLayerProps="optionalLayerProps"
+        :popupProps="popupProps" />
+      <router-view v-else />
     </div>
   </div>
 </template>
@@ -42,6 +44,8 @@ import { ref } from '@vue/reactivity';
 import InputCheckbox from "./components/SideBar/InputCheckbox.vue";
 import InputRadio from './components/SideBar/InputRadio.vue';
 import InputSwitch from './components/SideBar/inputSwitch.vue';
+import { useRoute } from 'vue-router';
+import { computed } from '@vue/runtime-core';
 
 export default {
   components: { InputCheckbox, InputRadio, InputSwitch },
@@ -50,43 +54,29 @@ export default {
     const toggleOptionBtn = ref(false)
     const toggleControlBtn = ref(false)
     const togglePopupBtn = ref(false)
+    const route = useRoute()
+    const currentRoute = computed(()=>route.name)
 
     const layerGroup = ['OSM Standard', 'OSM Humanitarian', 'Bing Map', 'CartoDB Base', 'Stamen Water']
-
     const optionalLayers = [ 'Tile Debug', 'Tile ArcGIS', 'Graticule', 'EUMap' ]
-
     const mapControls = ['Attribution', 'FullScreen', 'MousePosition', 'OverviewMap', 'ScaleLine', 'ZoomSlider', 'ZoomToExtent']
-
     const popups = ['None', 'Lon & Lat']
 
     const mapControlProps = ref(null)
-
     const baseLayerProps = ref(null)
-
     const optionalLayerProps = ref(null)
-
     const popupProps = ref(null)
 
-    const toggleMapControl = (e) => {
-      mapControlProps.value = e
-    }
-
-    const toggleBaseLayer = (e) => {
-      baseLayerProps.value = e
-    }
-
-    const toggleOptionalLayer = (e) => {
-      optionalLayerProps.value = e
-    }
-
-    const togglePopup = (e) => {
-      popupProps.value = e
-    }
+    const toggleMapControl = (e) => mapControlProps.value = e
+    const toggleBaseLayer = (e) => baseLayerProps.value = e
+    const toggleOptionalLayer = (e) => optionalLayerProps.value = e
+    const togglePopup = (e) => popupProps.value = e
 
     return { toggleLayerBtn, toggleOptionBtn, toggleControlBtn, togglePopupBtn,
             layerGroup, optionalLayers, mapControls, popups,
             baseLayerProps, optionalLayerProps, mapControlProps, popupProps, 
-            toggleBaseLayer, toggleOptionalLayer, toggleMapControl, togglePopup }
+            toggleBaseLayer, toggleOptionalLayer, toggleMapControl, togglePopup,
+            currentRoute }
   }
 }
 </script>
