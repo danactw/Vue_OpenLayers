@@ -1,5 +1,6 @@
 <template>
   <div id="map" class="map" ref="mapContainer"></div>
+  <h3>Click and Drag</h3>
   <div class="information"> {{ information }} </div>
 </template>
 
@@ -19,6 +20,7 @@ import {Fill, Stroke, Style, Text} from 'ol/style';
 import VectorImageLayer from 'ol/layer/VectorImage';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
+import { defaults as defaultsInteraction, Select, Translate } from 'ol/interaction';
 
 
 export default {
@@ -94,7 +96,6 @@ export default {
     }
 
     const vectorLayer = new VectorImageLayer({
-      background: '#1a2b39',
       imageRatio: 2,
       source: new VectorSource({
         url: 'https://openlayers.org/data/vector/ecoregions.json',
@@ -138,6 +139,13 @@ export default {
       }
     };
 
+    // Interactions
+    const select = new Select()
+
+    const translate = new Translate({
+      features: select.getFeatures()
+    })
+
     onMounted(() => {
       map.value = markRaw(new Map({
         layers: [
@@ -152,9 +160,10 @@ export default {
           center: [0, 0],
           zoom: 2,
         }),
+        interactions: defaultsInteraction().extend([select, translate])
       }))
 
-      map.value.on('pointermove', (e) => {
+      map.value.on('click', (e) => {
         displayFeatureInfo(e.pixel)
       })
     })
