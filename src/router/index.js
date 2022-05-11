@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ClusterMap from '../views/ClusterMap.vue'
 import VectorMap from '../views/VectorMap.vue'
+import FeatureMap from '../views/FeatureMap.vue'
 import BaseMap from '../views/BaseMap.vue'
 
 const routes = [
@@ -19,6 +20,11 @@ const routes = [
     path: '/vectormap',
     name: 'VectorMap',
     component: VectorMap
+  },
+  {
+    path: '/featuremap',
+    name: 'FeatureMap',
+    component: FeatureMap
   },
   {
     path: '/basemap',
