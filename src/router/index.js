@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import ClusterMap from '../views/ClusterMap.vue'
 import VectorMap from '../views/VectorMap.vue'
 import FeatureMap from '../views/FeatureMap.vue'
+import MeasureMap from '../views/MeasureMap.vue'
 import BaseMap from '../views/BaseMap.vue'
 
 const routes = [
@@ -25,6 +26,11 @@ const routes = [
     path: '/featuremap',
     name: 'FeatureMap',
     component: FeatureMap
+  },
+  {
+    path: '/measuremap',
+    name: 'MeasureMap',
+    component: MeasureMap
   },
   {
     path: '/basemap',

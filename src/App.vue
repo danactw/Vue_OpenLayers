@@ -4,6 +4,7 @@
     <router-link to="/clustermap">Cluster</router-link> |
     <router-link to="/vectormap">Vector</router-link> |
     <router-link to="/featuremap">Feature</router-link> |
+    <router-link to="/measuremap">Measure</router-link> |
     <!-- <router-link to="/basemap">BaseMap</router-link> | -->
   </nav>
   <div class="gridContainer">
