@@ -1,16 +1,29 @@
 <template>
   <div id="map" class="map" ref="mapContainer"></div>
-  <select id="actionType" v-model="actionType">
-    <option value="Draw">Draw</option>
-    <option value="Modify">Modify</option>
-    <option value="Translate">Translate</option>
-  </select>
-  <select id="featureType" v-model="featureType" :disabled="actionType!=='Draw'">
-    <option value="Point">Point</option>
-    <option value="LineString">LineString</option>
-    <option value="Polygon">Polygon</option>
-    <option value="Circle">Circle</option>
-  </select>
+  <div class="gridBox">
+    <div class="gridLeft">
+      <select id="actionType" v-model="actionType">
+        <option value="Drag">Drag</option>
+        <option value="Draw">Draw</option>
+        <option value="Modify">Modify</option>
+        <option value="Translate">Translate</option>
+      </select>
+      <select id="featureType" v-model="featureType" :disabled="actionType!=='Draw'">
+        <option value="Point">Point</option>
+        <option value="LineString">LineString</option>
+        <option value="Polygon">Polygon</option>
+        <option value="Circle">Circle</option>
+      </select>
+    </div>
+    <div class="gridRight">
+      <ol class="instrutions" v-if="actionType==='Drag'">
+        <li>Use <button class="keyBtn">Shift</button> +Drag to rotate.</li>
+        <li>Use <button class="keyBtn">Alt</button> +Drag to draw/modify an extent.</li>
+        <li>Use <button class="keyBtn">Shift</button> +<button class="keyBtn">Alt</button> +Drag to rotate and zoom. </li>
+      </ol>
+    </div>
+  </div>
+
 </template>
 
 <script>
@@ -21,15 +34,16 @@ import View from 'ol/View';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Draw, Modify, Select, Translate } from 'ol/interaction';
-import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
+import { Draw, Modify, Select, Translate, Extent, DragRotateAndZoom, DragRotate, DragZoom, defaults as defaultsInteraction } from 'ol/interaction';
+import { Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
+import { altKeyOnly, altShiftKeysOnly, shiftKeyOnly, doubleClick } from 'ol/events/condition';
 
 export default {
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
     const featureType = ref('Point')
-    const actionType = ref('Draw')
+    const actionType = ref('Drag')
 
     const vectorLayer = new VectorLayer({
       background: 'white',
@@ -113,6 +127,39 @@ export default {
       source: newFeature.getSource(),
     })
 
+    const extent = new Extent({
+      condition: altKeyOnly,
+      boxStyle: new Style({
+        fill: new Fill({
+          color: 'rgba(255, 204, 128, 0.3)'
+        }),
+        stroke: new Stroke({
+          color: 'rgba(255, 204, 128, 0.8)',
+          width: 2
+        })
+      }),
+      pointerStyle: new Style({
+        image: new CircleStyle({
+          radius: 5,
+          fill: new Fill({
+            color: 'rgba(255, 204, 128, 1)',
+          }),
+        })
+      })
+    })
+
+    const rotateAndZoom = new DragRotateAndZoom({
+      condition: altShiftKeysOnly
+    })
+
+    const dragRotate = new DragRotate({
+      condition: shiftKeyOnly
+    })
+
+    const dragZoom = new DragZoom({
+      condition: doubleClick
+    })
+
     onMounted(() => {
       map.value = markRaw(new Map({
         layers: [ vectorLayer, newFeature ],
@@ -120,7 +167,9 @@ export default {
         view: new View({
           center: [-10738077.767669883, 4787398.742408488],
           zoom: 4.5,
-        })
+        }),
+        keyboardEventTarget: document,
+        interactions: defaultsInteraction({shiftDragZoom: false, dragPan: false})
       }))
 
       map.value.addInteraction(select)
@@ -132,6 +181,10 @@ export default {
         map.value.removeInteraction(drawCircle)
         map.value.removeInteraction(modify)
         map.value.removeInteraction(translate)
+        map.value.removeInteraction(extent)
+        map.value.removeInteraction(rotateAndZoom)
+        map.value.removeInteraction(dragRotate)
+        map.value.removeInteraction(dragZoom)
       }
 
       watchEffect(() => {
@@ -153,12 +206,16 @@ export default {
           }
         } else if (actionType.value === 'Modify') {
           map.value.addInteraction(modify)
-        } else {
+        } else if (actionType.value === 'Translate') {
           map.value.addInteraction(translate)
+        } else {
+          map.value.addInteraction(extent)
+          map.value.addInteraction(rotateAndZoom)
+          map.value.addInteraction(dragRotate)
+          map.value.addInteraction(dragZoom)
         }
       })
     })
-
 
   return { map, mapContainer, featureType, actionType }
 }
@@ -176,5 +233,20 @@ select {
   padding: 5px;
   margin: 10px;
   font-size: 20px;
+}
+
+.instrutions {
+  text-align: start;
+}
+
+.keyBtn {
+  background-color: #777;
+  color: white;
+  border-radius: 5px;
+}
+
+.gridBox {
+  display: grid;
+  grid-template-columns: 40vw 40vw;
 }
 </style>
