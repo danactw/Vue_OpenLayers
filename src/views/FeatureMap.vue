@@ -14,6 +14,10 @@
         <option value="Polygon">Polygon</option>
         <option value="Circle">Circle</option>
       </select>
+      <span v-if="actionType==='Draw'">
+        <button @click="clearLastFeature" class="btn">Undo</button>
+        <button @click="clearAllFeatures" class="btn">Clear All</button>
+      </span>
     </div>
     <div class="gridRight">
       <ol class="instrutions" v-if="actionType==='Drag'">
@@ -127,6 +131,25 @@ export default {
       source: newFeature.getSource(),
     })
 
+    const addFeature = (e) => {
+      const parser = new GeoJSON()
+      parser.writeFeaturesObject([e.feature])
+    }
+
+    drawPoint.on('drawend', (e) => addFeature(e))
+    drawLineString.on('drawend', (e) => addFeature(e))
+    drawPolygon.on('drawend', (e) => addFeature(e))
+    drawCircle.on('drawend', (e) => addFeature(e))
+
+    const clearLastFeature = () => {
+      const feature = newFeature.getSource().getFeatures().pop()
+      newFeature.getSource().removeFeature(feature)
+    }
+
+    const clearAllFeatures = () => {
+      newFeature.getSource().clear()
+    }
+
     const extent = new Extent({
       condition: altKeyOnly,
       boxStyle: new Style({
@@ -217,7 +240,7 @@ export default {
       })
     })
 
-  return { map, mapContainer, featureType, actionType }
+  return { map, mapContainer, featureType, actionType, clearAllFeatures, clearLastFeature }
 }
 }
 </script>
@@ -233,6 +256,7 @@ select {
   padding: 5px;
   margin: 10px;
   font-size: 20px;
+  cursor: pointer;
 }
 
 .instrutions {
@@ -248,5 +272,21 @@ select {
 .gridBox {
   display: grid;
   grid-template-columns: 40vw 40vw;
+}
+
+.gridLeft {
+  padding-left: 100px;
+  text-align: start;
+}
+
+.btn {
+  padding: 5px;
+  margin: 5px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn:hover {
+  transform: translateY(1px);
 }
 </style>
