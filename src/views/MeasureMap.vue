@@ -4,7 +4,8 @@
     <option value="Length">Length (LineString)</option>
     <option value="Area">Area (Polygon)</option>
   </select>
-  <div v-html="measureOutput"></div>
+  <div class="hintMsgContainer" ref="hintMsgContainer"> {{ hintMsg }} </div>
+  <div class="measureOutputMsgContainer" ref="measureOutputMsgContainer" v-html="measureOutput"> </div>
 </template>
 
 <script>
@@ -19,15 +20,30 @@ import VectorSource from 'ol/source/Vector';
 import { Draw } from 'ol/interaction';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { getLength, getArea } from 'ol/sphere';
+import Overlay from 'ol/Overlay';
+// import { unByKey } from 'ol/Observable';
 
 export default {
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
+
     const measureType = ref('Length')
     const sketchToMeasure = ref(null)
-    const measureOutput = ref(null)
     const listener = ref(null)
+
+    const startDrawingMsg = 'Click to start drawing'
+    const continueLineMsg = 'Click to continue drawing the line';
+    const continuePolygonMsg = 'Click to continue drawing the polygon';
+    const hintMsgContainer = ref(null)
+    const hintOverlay = ref(null)
+    const hintMsg = ref(startDrawingMsg)
+
+    const measureOutputMsgContainer = ref(null)
+    const measureOutputOverlay = ref(null)
+    const measureOutput = ref(null)
+
+    const newOverlay = ref([])
 
     const raster = new TileLayer({
       source: new OSM(),
@@ -117,8 +133,24 @@ export default {
       });
     }
 
+    const createNewOverlay = (e) => {
+      const newDiv = document.createElement('div')
+      newDiv.className = measureOutput.value ? 'ol-tooltip ol-tooltip-measure' : ''
+      newOverlay.value = new Overlay({ 
+        element: newDiv,
+        positioning: 'bottom-right',
+        position: e.coordinate,
+        offset: [0, -5],
+      })
+      newDiv.innerHTML = measureOutput.value
+      map.value.addOverlay(newOverlay.value)
+    }
+
     drawLineforMeasurement.on('drawstart', (e)=>measure(e));
     drawPolygonforMeasurement.on('drawstart', (e)=>measure(e));
+    // drawPolygonforMeasurement.on('drawend', ()=>{
+    //   unByKey(listener.value)
+    // });
 
     onMounted(() => {
       map.value = markRaw(new Map({
@@ -129,6 +161,22 @@ export default {
           zoom: 2,
         }),
       }))
+
+      // Overlay
+      hintOverlay.value = new Overlay({ 
+        element: hintMsgContainer.value,
+        positioning: 'center-left',
+        offset: [15, 0]
+      }) 
+
+      measureOutputOverlay.value = new Overlay({ 
+        element: measureOutputMsgContainer.value,
+        positioning: 'bottom-right',
+        offset: [0, -5],
+      }) 
+
+      map.value.addOverlay(hintOverlay.value)
+      map.value.addOverlay(measureOutputOverlay.value)
 
       const removerInteractions = () => {
         map.value.removeInteraction(drawLineforMeasurement)
@@ -145,11 +193,29 @@ export default {
             map.value.addInteraction(drawPolygonforMeasurement)
             break;
         }
+        map.value.on('pointermove', (e) => {
+          const currentCoord = e.coordinate
+          hintOverlay.value.setPosition(currentCoord)
+          if (sketchToMeasure.value) {
+            switch (measureType.value) {
+              case 'Length': 
+                hintMsg.value = continueLineMsg
+                break;
+              case 'Area': 
+                hintMsg.value = continuePolygonMsg
+                break;
+            }
+          } else {
+            hintMsg.value = startDrawingMsg
+          }
+          measureOutputOverlay.value.setPosition(currentCoord)
+        })
+        map.value.on('click', e => createNewOverlay(e))
       })
       
     })
 
-  return { map, mapContainer, measureType, measureOutput }
+  return { map, mapContainer, measureType, measureOutput, hintMsg, hintMsgContainer, measureOutputMsgContainer }
 }
 }
 </script>
@@ -159,5 +225,40 @@ export default {
   width: 98%;
   height: 600px;
   margin: auto;
+}
+.ol-tooltip {
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  color: white;
+  padding: 4px 8px;
+  opacity: 0.7;
+  white-space: nowrap;
+  font-size: 12px;
+  cursor: default;
+  /* user-select: none; */
+}
+.ol-tooltip-measure {
+  opacity: 1;
+  font-weight: bold;
+}
+.ol-tooltip-static {
+  background-color: #ffcc33;
+  color: black;
+  border: 1px solid white;
+}
+.ol-tooltip-measure:before,
+.ol-tooltip-static:before {
+  border-top: 6px solid rgba(0, 0, 0, 0.5);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  margin-left: -7px;
+  left: 50%;
+}
+.ol-tooltip-static:before {
+  border-top-color: #ffcc33;
 }
 </style>
