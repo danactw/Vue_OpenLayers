@@ -1,11 +1,15 @@
 <template>
   <div id="map" class="map" ref="mapContainer"></div>
+  <label for="type">Measurement type:</label>
   <select id="measureType" v-model="measureType" >
     <option value="Length">Length (LineString)</option>
     <option value="Area">Area (Polygon)</option>
   </select>
   <div class="hintMsgContainer" ref="hintMsgContainer"> {{ hintMsg }} </div>
-  <div class="measureOutputMsgContainer" ref="measureOutputMsgContainer" v-html="measureOutput"> </div>
+  <input class="optionsInMeasure" type="checkbox" id="segments" checked />
+  <label for="segments">Show segment lengths</label>
+  <input class="optionsInMeasure" type="checkbox" id="clear" checked />
+  <label for="clear">Clear previous measure</label>
 </template>
 
 <script>
@@ -39,11 +43,11 @@ export default {
     const hintOverlay = ref(null)
     const hintMsg = ref(startDrawingMsg)
 
-    const measureOutputMsgContainer = ref(null)
-    const measureOutputOverlay = ref(null)
-    const measureOutput = ref(null)
+    const measureLengthOutput = ref(null)
+    const measureAreaOutput = ref(null)
 
-    const newOverlay = ref([])
+    const newOverlayForLength = ref(null)
+    const newOverlayForArea = ref(null)
 
     const raster = new TileLayer({
       source: new OSM(),
@@ -124,33 +128,47 @@ export default {
       return output;
     };
 
-    function measure(e) {
-      sketchToMeasure.value = e.feature.getGeometry();
-      listener.value = sketchToMeasure.value.on('change', function (e) {
-        const geom = e.target;
-        if (sketchToMeasure.value.getType()==='LineString') measureOutput.value = formatLength(geom);
-        else measureOutput.value = formatArea(geom);
-      });
-    }
-
-    const createNewOverlay = (e) => {
+    const createNewOverlayforLength = (e) => {
       const newDiv = document.createElement('div')
-      newDiv.className = measureOutput.value ? 'ol-tooltip ol-tooltip-measure' : ''
-      newOverlay.value = new Overlay({ 
+      newDiv.className = measureLengthOutput.value ? 'ol-tooltip ol-tooltip-measure' : ''
+      newOverlayForLength.value = new Overlay({ 
         element: newDiv,
         positioning: 'bottom-right',
         position: e.coordinate,
         offset: [0, -5],
       })
-      newDiv.innerHTML = measureOutput.value
-      map.value.addOverlay(newOverlay.value)
+      newDiv.innerHTML = measureLengthOutput.value
+      map.value.addOverlay(newOverlayForLength.value)
     }
 
-    drawLineforMeasurement.on('drawstart', (e)=>measure(e));
-    drawPolygonforMeasurement.on('drawstart', (e)=>measure(e));
-    // drawPolygonforMeasurement.on('drawend', ()=>{
-    //   unByKey(listener.value)
-    // });
+    const createNewOverlayForArea = (e) => {
+      map.value.removeOverlay(newOverlayForArea.value)
+      const newAreaDiv = document.createElement('div')
+      newAreaDiv.className = 'ol-tooltip ol-tooltip-measure'
+      newOverlayForArea.value = new Overlay({
+        element: newAreaDiv,
+        positioning: 'bottom-right',
+        position: e.coordinate,
+        offset: [30, 30],
+      })
+      newAreaDiv.innerHTML = measureAreaOutput.value
+      map.value.addOverlay(newOverlayForArea.value)
+    }
+
+    function startMeasure(e) {
+      sketchToMeasure.value = e.feature.getGeometry();
+      listener.value = sketchToMeasure.value.on('change', function (e) {
+        const geom = e.target;
+        measureLengthOutput.value = formatLength(geom);
+        measureAreaOutput.value = formatArea(geom);
+      });
+    }
+
+    function stopMeasure() {
+      sketchToMeasure.value = null
+      measureLengthOutput.value = null;
+      measureAreaOutput.value = null;
+    }
 
     onMounted(() => {
       map.value = markRaw(new Map({
@@ -169,14 +187,12 @@ export default {
         offset: [15, 0]
       }) 
 
-      measureOutputOverlay.value = new Overlay({ 
-        element: measureOutputMsgContainer.value,
-        positioning: 'bottom-right',
-        offset: [0, -5],
-      }) 
-
       map.value.addOverlay(hintOverlay.value)
-      map.value.addOverlay(measureOutputOverlay.value)
+
+      drawLineforMeasurement.on('drawstart', (e) => startMeasure(e));
+      drawPolygonforMeasurement.on('drawstart', (e) => startMeasure(e));
+      drawLineforMeasurement.on('drawend', () => stopMeasure());
+      drawPolygonforMeasurement.on('drawend', () => stopMeasure());
 
       const removerInteractions = () => {
         map.value.removeInteraction(drawLineforMeasurement)
@@ -193,6 +209,7 @@ export default {
             map.value.addInteraction(drawPolygonforMeasurement)
             break;
         }
+
         map.value.on('pointermove', (e) => {
           const currentCoord = e.coordinate
           hintOverlay.value.setPosition(currentCoord)
@@ -208,14 +225,16 @@ export default {
           } else {
             hintMsg.value = startDrawingMsg
           }
-          measureOutputOverlay.value.setPosition(currentCoord)
         })
-        map.value.on('click', e => createNewOverlay(e))
+
+        map.value.on('click', (e)=> {
+          createNewOverlayforLength(e)
+          if (measureType.value==='Area') createNewOverlayForArea(e)
+        })
       })
-      
     })
 
-  return { map, mapContainer, measureType, measureOutput, hintMsg, hintMsgContainer, measureOutputMsgContainer }
+  return { map, mapContainer, measureType, hintMsg, hintMsgContainer, measureAreaOutput }
 }
 }
 </script>
@@ -226,6 +245,11 @@ export default {
   height: 600px;
   margin: auto;
 }
+
+label {
+  font-size: 20px;
+}
+
 .ol-tooltip {
   position: relative;
   background: rgba(0, 0, 0, 0.5);
@@ -236,12 +260,13 @@ export default {
   white-space: nowrap;
   font-size: 12px;
   cursor: default;
-  /* user-select: none; */
 }
+
 .ol-tooltip-measure {
   opacity: 1;
   font-weight: bold;
 }
+
 .ol-tooltip-static {
   background-color: #ffcc33;
   color: black;
@@ -258,7 +283,12 @@ export default {
   margin-left: -7px;
   left: 50%;
 }
+
 .ol-tooltip-static:before {
   border-top-color: #ffcc33;
+}
+
+.optionsInMeasure {
+  margin-left: 20px;
 }
 </style>
