@@ -4,11 +4,11 @@
     <option value="Length">Length (LineString)</option>
     <option value="Area">Area (Polygon)</option>
   </select>
-  <div> {{ measureOutput }} </div>
+  <div v-html="measureOutput"></div>
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref } from 'vue';
+import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -54,10 +54,7 @@ export default {
       }),
     });
 
-    const drawforMeasurement = new Draw({
-    source: source,
-    type: measureType.value === 'Length' ? 'LineString' : 'Polygon',
-    style: new Style({
+    const measureStyle = new Style({
       fill: new Fill({
         color: 'rgba(255, 255, 255, 0.2)',
       }),
@@ -76,15 +73,26 @@ export default {
         }),
       }),
     })
+
+    const drawLineforMeasurement = new Draw({
+      source: source,
+      type: 'LineString',
+      style: measureStyle
+    })
+
+    const drawPolygonforMeasurement = new Draw({
+      source: source,
+      type: 'Polygon',
+      style: measureStyle
     })
 
     const formatLength = function (line) {
       const length = getLength(line);
       let output;
       if (length > 100) {
-        output = Math.round((length / 1000) * 100) / 100 + ' ' + 'km';
+        output = `${Math.round((length / 1000) * 100) / 100} km`;
       } else {
-        output = Math.round(length * 100) / 100 + ' ' + 'm';
+        output = `${Math.round(length * 100) / 100} m`;
       }
       return output;
     };
@@ -93,21 +101,24 @@ export default {
       const area = getArea(polygon);
       let output;
       if (area > 10000) {
-        output = Math.round((area / 1000000) * 100) / 100 + ' ' + 'km<sup>2</sup>';
+        output = `${Math.round((area / 1000000) * 100) / 100} km<sup>2</sup>`;
       } else {
-        output = Math.round(area * 100) / 100 + ' ' + 'm<sup>2</sup>';
+        output = `${Math.round(area * 100) / 100} m<sup>2</sup>`;
       }
       return output;
     };
 
-    drawforMeasurement.on('drawstart', function (evt) {
-      sketchToMeasure.value = evt.feature.getGeometry();
-      listener.value = sketchToMeasure.value.on('change', function (evt) {
-        const geom = evt.target;
+    function measure(e) {
+      sketchToMeasure.value = e.feature.getGeometry();
+      listener.value = sketchToMeasure.value.on('change', function (e) {
+        const geom = e.target;
         if (sketchToMeasure.value.getType()==='LineString') measureOutput.value = formatLength(geom);
         else measureOutput.value = formatArea(geom);
       });
-    });
+    }
+
+    drawLineforMeasurement.on('drawstart', (e)=>measure(e));
+    drawPolygonforMeasurement.on('drawstart', (e)=>measure(e));
 
     onMounted(() => {
       map.value = markRaw(new Map({
@@ -118,7 +129,24 @@ export default {
           zoom: 2,
         }),
       }))
-      map.value.addInteraction(drawforMeasurement)
+
+      const removerInteractions = () => {
+        map.value.removeInteraction(drawLineforMeasurement)
+        map.value.removeInteraction(drawPolygonforMeasurement)        
+      }
+
+      watchEffect(()=>{
+        removerInteractions()
+        switch (measureType.value) {
+          case 'Length': 
+            map.value.addInteraction(drawLineforMeasurement)
+            break;
+          case 'Area': 
+            map.value.addInteraction(drawPolygonforMeasurement)
+            break;
+        }
+      })
+      
     })
 
   return { map, mapContainer, measureType, measureOutput }
