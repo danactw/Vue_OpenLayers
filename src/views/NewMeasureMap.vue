@@ -5,7 +5,6 @@
     <option value="LineString">Length (LineString)</option>
     <option value="Polygon">Area (Polygon)</option>
   </select>
-  <div class="hintMsgContainer" ref="hintMsgContainer"> {{ hintMsg }} </div>
   <input class="optionsInMeasure" type="checkbox" id="segments" value="showSegments" v-model="showSegments" />
   <label for="segments">Show segment lengths</label>
   <input class="optionsInMeasure" type="checkbox" id="clear" value="clearPrevious" v-model="clearPrevious"/>
@@ -22,16 +21,19 @@ import { Tile as TileLayer } from 'ol/layer';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Draw } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style, Text } from 'ol/style';
-// import { LineString, Point } from 'ol/geom';
-// import { getLength, getArea } from 'ol/sphere';
+import { Circle as CircleStyle, RegularShape, Fill, Stroke, Style, Text } from 'ol/style';
+import { getLength, getArea } from 'ol/sphere';
+import { Point } from 'ol/geom';
 
 export default {
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
 
+    const sketch = ref(false)
     const measureType = ref('LineString')
+    const measureOutput = ref(null)
+    // const segmentOutput = ref(null)
     const showSegments = ref(true)
     const clearPrevious = ref(true)
     const startDrawingMsg = 'Click to start measuring'
@@ -70,6 +72,30 @@ export default {
       }),
     });
 
+    const outputStyle = new Style({
+      text: new Text({
+        font: '14px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.7)',
+        }),
+        padding: [3, 3, 3, 3],
+        textBaseline: 'bottom',
+        offsetY: -15,
+      }),
+      image: new RegularShape({
+        radius: 8,
+        points: 3,
+        angle: Math.PI,
+        displacement: [0, 10],
+        fill: new Fill({
+          color: 'rgba(0, 0, 0, 0.7)',
+        }),
+      }),
+    });
+
     const source = new VectorSource();
 
     const vector = new VectorLayer({
@@ -81,14 +107,44 @@ export default {
       source: new OSM(),
     });
 
+    const formatLength = function (line) {
+      const length = getLength(line);
+      let output;
+      if (length > 100) {
+        output = `${Math.round((length / 1000) * 100) / 100} km`;
+      } else {
+        output = `${Math.round(length * 100) / 100} m`;
+      }
+      return output;
+    };
+
+    const formatArea = function (polygon) {
+      const area = getArea(polygon);
+      let output;
+      if (area > 10000) {
+        output = `${Math.round((area / 1000000) * 100) / 100} km<sup>2</sup>`;
+      } else {
+        output = `${Math.round(area * 100) / 100} m<sup>2</sup>`;
+      }
+      return output;
+    };
+
+    const startMeasure = (geometry) => {
+      measureOutput.value = measureType.value === 'LineString' ? formatLength(geometry) : formatArea(geometry)
+    }
+
     const styleFunction = (feature) =>  {
       const styles = [style];
       const geometry = feature.getGeometry();
       const type = geometry.getType();
-      if (
-        hintMsg.value &&
-        type === 'Point'
-      ) {
+      startMeasure(geometry)
+      if ( sketch.value ) {
+        const point = new Point(geometry.getLastCoordinate())
+        outputStyle.setGeometry(point);
+        outputStyle.getText().setText(measureOutput.value);
+        styles.push(outputStyle)
+      }
+      if ( hintMsg.value && type === 'Point') {
         hintStyle.getText().setText(hintMsg.value);
         styles.push(hintStyle);
       }
@@ -106,9 +162,11 @@ export default {
     function addInteraction() {
       hintMsg.value = startDrawingMsg;
       draw.value.on('drawstart', () => {
+        sketch.value = true
         hintMsg.value = continueMsg.value;
       });
       draw.value.on('drawend', () => {
+        sketch.value = false
         hintMsg.value = startDrawingMsg
       })
     }
@@ -126,7 +184,6 @@ export default {
       map.value.addInteraction(draw.value)
       addInteraction()
       watch(() => measureType.value, () => {
-        console.log(measureType.value);
         map.value.removeInteraction(draw.value)
         map.value.addInteraction(draw.value)
         addInteraction()
@@ -140,12 +197,6 @@ export default {
 </script>
 
 <style>
-.map {
-  width: 98%;
-  height: 600px;
-  margin: auto;
-}
-
 label {
   font-size: 20px;
 }
