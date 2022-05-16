@@ -10,6 +10,7 @@
   <label for="segments">Show segment lengths</label>
   <input class="optionsInMeasure" type="checkbox" id="clear" checked />
   <label for="clear">Clear previous measure</label>
+  <div v-html="measureAreaOutput"></div>
 </template>
 
 <script>
@@ -141,26 +142,25 @@ export default {
       map.value.addOverlay(newOverlayForLength.value)
     }
 
-    const createNewOverlayForArea = (e) => {
-      map.value.removeOverlay(newOverlayForArea.value)
-      const newAreaDiv = document.createElement('div')
-      newAreaDiv.className = 'ol-tooltip ol-tooltip-measure'
-      newOverlayForArea.value = new Overlay({
-        element: newAreaDiv,
-        positioning: 'bottom-right',
-        position: e.coordinate,
-        offset: [30, 30],
-      })
-      newAreaDiv.innerHTML = measureAreaOutput.value
-      map.value.addOverlay(newOverlayForArea.value)
-    }
+    // const createNewOverlayForArea = (e) => {
+    //   const newAreaDiv = document.createElement('div')
+    //   newAreaDiv.className = 'ol-tooltip ol-tooltip-measure'
+    //   newOverlayForArea.value = new Overlay({
+    //     element: newAreaDiv,
+    //     positioning: 'bottom-right',
+    //     position: e.coordinate,
+    //     offset: [30, 30],
+    //   })
+    //   newAreaDiv.innerHTML = measureAreaOutput.value
+    //   map.value.addOverlay(newOverlayForArea.value)
+    // }
 
     function startMeasure(e) {
       sketchToMeasure.value = e.feature.getGeometry();
       listener.value = sketchToMeasure.value.on('change', function (e) {
         const geom = e.target;
-        measureLengthOutput.value = formatLength(geom);
-        measureAreaOutput.value = formatArea(geom);
+        if (sketchToMeasure.value.getType()==='LineString') measureLengthOutput.value = formatLength(geom);
+        else measureAreaOutput.value = formatArea(geom);
       });
     }
 
@@ -190,7 +190,19 @@ export default {
       map.value.addOverlay(hintOverlay.value)
 
       drawLineforMeasurement.on('drawstart', (e) => startMeasure(e));
-      drawPolygonforMeasurement.on('drawstart', (e) => startMeasure(e));
+      drawPolygonforMeasurement.on('drawstart', (e) => {
+        const newAreaDiv = document.createElement('div')
+        newAreaDiv.className = 'ol-tooltip ol-tooltip-measure'
+        newOverlayForArea.value = new Overlay({
+          element: newAreaDiv,
+          positioning: 'bottom-right',
+          position: e.coordinate,
+          offset: [30, 30],
+        })
+        newAreaDiv.innerHTML = measureAreaOutput.value
+        map.value.addOverlay(newOverlayForArea.value)
+        startMeasure(e)
+      });
       drawLineforMeasurement.on('drawend', () => stopMeasure());
       drawPolygonforMeasurement.on('drawend', () => stopMeasure());
 
@@ -229,7 +241,6 @@ export default {
 
         map.value.on('click', (e)=> {
           createNewOverlayforLength(e)
-          if (measureType.value==='Area') createNewOverlayForArea(e)
         })
       })
     })
