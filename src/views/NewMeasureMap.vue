@@ -2,8 +2,8 @@
   <div id="map" class="map" ref="mapContainer"></div>
   <label for="type">Measurement type:</label>
   <select id="measureType" v-model="measureType" >
-    <option value="Length">Length (LineString)</option>
-    <option value="Area">Area (Polygon)</option>
+    <option value="LineString">Length (LineString)</option>
+    <option value="Polygon">Area (Polygon)</option>
   </select>
   <div class="hintMsgContainer" ref="hintMsgContainer"> {{ hintMsg }} </div>
   <input class="optionsInMeasure" type="checkbox" id="segments" value="showSegments" v-model="showSegments" />
@@ -13,16 +13,16 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
+import { shallowRef, onMounted, markRaw, ref, computed, watch } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
-import { OSM} from 'ol/source';
+import { OSM } from 'ol/source';
 import { Tile as TileLayer } from 'ol/layer';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Draw } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { Circle as CircleStyle, Fill, Stroke, Style, Text } from 'ol/style';
 // import { LineString, Point } from 'ol/geom';
 // import { getLength, getArea } from 'ol/sphere';
 
@@ -31,19 +31,13 @@ export default {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
 
-    const measureType = ref('Length')
+    const measureType = ref('LineString')
     const showSegments = ref(true)
     const clearPrevious = ref(true)
-    const startDrawingMsg = 'Click to start drawing'
-    // const continueLineMsg = 'Click to continue drawing the line';
-    // const continuePolygonMsg = 'Click to continue drawing the polygon';
+    const startDrawingMsg = 'Click to start measuring'
+    const continueMsg = computed(()=>`Click to continue drawing ${measureType.value}`);
     const hintMsgContainer = ref(null)
     const hintMsg = ref(startDrawingMsg)
-
-    // const measureLengthOutput = ref(null)
-    // const measureSegmentLengthOutput = ref(null)
-    const measureAreaOutput = ref(null)
-
 
     const style = new Style({
       fill: new Fill({
@@ -61,6 +55,21 @@ export default {
       }),
     })
 
+    const hintStyle = new Style({
+      text: new Text({
+        font: '12px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+        padding: [2, 2, 2, 2],
+        textAlign: 'left',
+        offsetX: 15,
+      }),
+    });
+
     const source = new VectorSource();
 
     const vector = new VectorLayer({
@@ -72,21 +81,36 @@ export default {
       source: new OSM(),
     });
 
-    const drawLine = new Draw({
-      source: source,
-      type: 'LineString',
-      style: style
-    })
+    const styleFunction = (feature) =>  {
+      const styles = [style];
+      const geometry = feature.getGeometry();
+      const type = geometry.getType();
+      if (
+        hintMsg.value &&
+        type === 'Point'
+      ) {
+        hintStyle.getText().setText(hintMsg.value);
+        styles.push(hintStyle);
+      }
+      return styles;
+    }
 
-    const drawPolygon = new Draw({
-      source: source,
-      type: 'Polygon',
-      style: style
-    })
+    const draw = computed(() =>
+      new Draw({
+        source: source,
+        type: measureType.value,
+        style: styleFunction
+      })
+    )
 
-    const clearDraw = () => {
-      map.value.removeInteraction(drawLine)
-      map.value.removeInteraction(drawPolygon)
+    function addInteraction() {
+      hintMsg.value = startDrawingMsg;
+      draw.value.on('drawstart', () => {
+        hintMsg.value = continueMsg.value;
+      });
+      draw.value.on('drawend', () => {
+        hintMsg.value = startDrawingMsg
+      })
     }
 
     onMounted(() => {
@@ -99,22 +123,18 @@ export default {
         }),
       }))
 
-      watchEffect(()=>{
-        clearDraw()
-        switch (measureType.value) {
-          case 'Length':
-            map.value.addInteraction(drawLine)
-            break;
-          case 'Area':
-            map.value.addInteraction(drawPolygon)
-            break;
-        }
+      map.value.addInteraction(draw.value)
+      addInteraction()
+      watch(() => measureType.value, () => {
+        console.log(measureType.value);
+        map.value.removeInteraction(draw.value)
+        map.value.addInteraction(draw.value)
+        addInteraction()
       })
-
 
     })
 
-  return { map, mapContainer, measureType, hintMsg, hintMsgContainer, measureAreaOutput, showSegments, clearPrevious }
+  return { map, mapContainer, measureType, hintMsg, hintMsgContainer, showSegments, clearPrevious }
 }
 }
 </script>
