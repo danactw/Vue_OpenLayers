@@ -110,13 +110,12 @@ nav a.router-link-exact-active {
 .gridContainer {
   display: grid;
   grid-template-columns: 20vw 80vw;
-  grid-template-rows: 85vh;
-  overflow: hidden;
+  grid-template-rows: 80vh;
 }
 
 .sidebar {
   margin-left: 30px;
-  height: 80vh;
+  height: 80%;
   overflow: scroll;
 }
 

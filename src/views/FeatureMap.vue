@@ -246,12 +246,6 @@ export default {
 </script>
 
 <style>
-.map {
-  width: 98%;
-  height: 600px;
-  margin: auto;
-}
-
 select {
   padding: 5px;
   margin: 10px;
