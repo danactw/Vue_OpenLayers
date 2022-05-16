@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref, watch } from 'vue';
+import { shallowRef, onMounted, markRaw, ref, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -21,7 +21,7 @@ import { OSM} from 'ol/source';
 import { Tile as TileLayer } from 'ol/layer';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Draw, Modify} from 'ol/interaction';
+import { Draw } from 'ol/interaction';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 // import { LineString, Point } from 'ol/geom';
 // import { getLength, getArea } from 'ol/sphere';
@@ -34,9 +34,6 @@ export default {
     const measureType = ref('Length')
     const showSegments = ref(true)
     const clearPrevious = ref(true)
-
-    const tip = ref(null)
-
     const startDrawingMsg = 'Click to start drawing'
     // const continueLineMsg = 'Click to continue drawing the line';
     // const continuePolygonMsg = 'Click to continue drawing the polygon';
@@ -75,40 +72,21 @@ export default {
       source: new OSM(),
     });
 
-    const modify = new Modify({source: source, style: style});
-
-    let tipPoint;
-
-    const draw = new Draw({
+    const drawLine = new Draw({
       source: source,
-      type: measureType.value,
+      type: 'LineString',
       style: style
-    });
+    })
 
-    function addInteraction() {
-      const drawType = measureType.value;
-      const activeTip =
-        'Click to continue drawing the ' +
-        (drawType === 'Area' ? 'polygon' : 'line');
-      const idleTip = 'Click to start measuring';
-      tip.value = idleTip;
-      draw.on('drawstart', function () {
-        if (clearPrevious.value) {
-          vector.getSource().clear();
-        }
-        modify.setActive(false);
-        tip.value = activeTip;
-      });
-      draw.on('drawend', function () {
-        style.setGeometry(tipPoint);
-        modify.setActive(true);
-        map.value.once('pointermove', function () {
-          style.setGeometry();
-        });
-        tip.value = idleTip;
-      });
-      modify.setActive(true);
-      map.value.addInteraction(draw);
+    const drawPolygon = new Draw({
+      source: source,
+      type: 'Polygon',
+      style: style
+    })
+
+    const clearDraw = () => {
+      map.value.removeInteraction(drawLine)
+      map.value.removeInteraction(drawPolygon)
     }
 
     onMounted(() => {
@@ -121,12 +99,18 @@ export default {
         }),
       }))
 
-      addInteraction();
-
-      watch(()=>measureType.value, ()=>{
-        map.value.removeInteraction(draw);
-        addInteraction();
+      watchEffect(()=>{
+        clearDraw()
+        switch (measureType.value) {
+          case 'Length':
+            map.value.addInteraction(drawLine)
+            break;
+          case 'Area':
+            map.value.addInteraction(drawPolygon)
+            break;
+        }
       })
+
 
     })
 
