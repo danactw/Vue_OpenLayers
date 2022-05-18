@@ -1,6 +1,7 @@
 <template>
+  <input id="topSwipe" type="range" style="width: 100%" v-model="topSwipe">
   <div id="map" class="map" ref="mapContainer"></div>
-  <input id="swipe" type="range" style="width: 100%" v-model="swipe">
+  <input id="bottomSwipe" type="range" style="width: 100%" v-model="bottomSwipe">
 </template>
 
 <script>
@@ -16,7 +17,8 @@ export default {
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
-    const swipe = ref(50)
+    const topSwipe = ref(50)
+    const bottomSwipe = ref(50)
 
     const OSMHumanitarian = new TileLayer({
       source: new OSM({
@@ -28,10 +30,11 @@ export default {
     OSMHumanitarian.on('prerender', function (event) {
       const ctx = event.context;
       const mapSize = map.value.getSize();
-      const width = mapSize[0] * (swipe.value / 100);
-      const topLeft = getRenderPixel(event, [width, 0]);
+      const topWidth = mapSize[0] * (topSwipe.value / 100);
+      const bottomWidth = mapSize[0] * (bottomSwipe.value / 100);
+      const topLeft = getRenderPixel(event, [topWidth, 0]);
       const topRight = getRenderPixel(event, [mapSize[0], 0]);
-      const bottomLeft = getRenderPixel(event, [width, mapSize[1]]);
+      const bottomLeft = getRenderPixel(event, [bottomWidth, mapSize[1]]);
       const bottomRight = getRenderPixel(event, mapSize);
 
       ctx.save();
@@ -68,12 +71,13 @@ export default {
         map.value.render();
       };
 
-      watch(() => swipe.value, listener)
+      watch(() => topSwipe.value, listener)
+      watch(() => bottomSwipe.value, listener)
 
     })
 
 
-  return { map, mapContainer, swipe }
+  return { map, mapContainer, topSwipe, bottomSwipe }
 }
 }
 </script>
