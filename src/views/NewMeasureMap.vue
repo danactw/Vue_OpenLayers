@@ -225,6 +225,7 @@ export default {
 
     const drawStart = () => {
       hintMsg.value = continueMsg.value;
+      if (clearPrevious.value) source.clear()
     }
 
     const drawEnd = () => {
