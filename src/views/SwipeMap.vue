@@ -105,6 +105,18 @@ export default {
         }),
       }))
 
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') {
+          spyRadius.value = Math.min(spyRadius.value + 5, 150);
+          map.value.render();
+          e.preventDefault()
+        } else if (e.key === 'ArrowDown') {
+          spyRadius.value = Math.max(spyRadius.value - 5, 25);
+          map.value.render();
+          e.preventDefault()
+        }
+      })
+
       map.value.on('pointermove', (e) => {
         const XBorder = map.value.getSize()[0]-75
         const YBorder = map.value.getSize()[1]-75
