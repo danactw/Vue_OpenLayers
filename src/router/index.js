@@ -5,6 +5,7 @@ import VectorMap from '../views/VectorMap.vue'
 import FeatureMap from '../views/FeatureMap.vue'
 import MeasureMap from '../views/MeasureMap.vue'
 import NewMeasureMap from '../views/NewMeasureMap.vue'
+import SwipeMap from '../views/SwipeMap.vue'
 import BaseMap from '../views/BaseMap.vue'
 import TestMap from '../views/TestMap.vue'
 
@@ -38,6 +39,11 @@ const routes = [
     path: '/newmeasuremap',
     name: 'NewMeasureMap',
     component: NewMeasureMap
+  },
+  {
+    path: '/swipemap',
+    name: 'SwipeMap',
+    component: SwipeMap
   },
   {
     path: '/basemap',

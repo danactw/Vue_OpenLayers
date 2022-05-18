@@ -6,6 +6,7 @@
     <router-link to="/featuremap">Feature</router-link> |
     <router-link to="/measuremap">Measure</router-link> |
     <router-link to="/newmeasuremap">New Measure</router-link> |
+    <router-link to="/swipemap">Swipe</router-link> |
     <router-link to="/testmap">Test</router-link> |
     <!-- <router-link to="/basemap">BaseMap</router-link> | -->
   </nav>
