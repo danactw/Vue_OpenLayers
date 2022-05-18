@@ -32,7 +32,7 @@ export default {
 
     const sketch = ref(false)
     const measureType = ref('LineString')
-    const measureOutput = ref(null)
+    // const measureOutput = ref(null)
     // const segmentOutput = ref(null)
     const showSegments = ref(true)
     const clearPrevious = ref(true)
@@ -98,17 +98,6 @@ export default {
       }),
     });
 
-    const source = new VectorSource();
-
-    const vector = new VectorLayer({
-      source: source,
-      style: style
-    });
-    
-    const raster = new TileLayer({
-      source: new OSM(),
-    });
-
     const formatLength = function (line) {
       const length = getLength(line);
       let output;
@@ -131,27 +120,50 @@ export default {
       return output;
     };
 
-    const startMeasure = (geometry) => {
-      measureOutput.value = measureType.value === 'LineString' ? formatLength(geometry) : formatArea(geometry)
-    }
+    const styles = ref([])
 
     const styleFunction = (feature) =>  {
-      const styles = [style];
+      styles.value = [style]
       const geometry = feature.getGeometry();
       const type = geometry.getType();
-      startMeasure(geometry)
-      if ( sketch.value && type === measureType.value) {
-        const point = new Point(geometry.getLastCoordinate())
-        outputStyle.setGeometry(point);
-        outputStyle.getText().setText(measureOutput.value);
-        styles.push(outputStyle)
+      let measureOutput, measureOutputCoord;
+      if ( type === measureType.value ) {
+        if (measureType.value === 'LineString') {
+          measureOutput = formatLength(geometry)
+          measureOutputCoord = new Point(geometry.getLastCoordinate())
+          // segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
+        } else if (measureType.value === 'Polygon') {
+          measureOutput = formatArea(geometry)
+          measureOutputCoord = geometry.getInteriorPoint()
+          // segmentOutputCoord = geometry
+        }
+      }
+      if (measureOutput) {
+        outputStyle.setGeometry(measureOutputCoord);
+        outputStyle.getText().setText(measureOutput);
+        styles.value.push(outputStyle)
       }
       if ( hintMsg.value && type === 'Point') {
         hintStyle.getText().setText(hintMsg.value);
-        styles.push(hintStyle);
+        styles.value.push(hintStyle);
       }
-      return styles;
+      return styles.value;
     }
+
+    const source = new VectorSource();
+
+    const vector = new VectorLayer({
+      source: source,
+      style: function (feature) {
+        return styleFunction(feature)
+      },
+      updateWhileAnimating: true,
+      updateWhileInteracting: true
+    });
+    
+    const raster = new TileLayer({
+      source: new OSM(),
+    });
 
     // const draw = computed(() =>
     //   new Draw({
@@ -205,6 +217,8 @@ export default {
       // })
     }
 
+    addInteraction()
+
     onMounted(() => {
       map.value = markRaw(new Map({
         layers: [raster, vector],
@@ -227,7 +241,6 @@ export default {
             break;
         }
       })
-      addInteraction()
 
     })
 
