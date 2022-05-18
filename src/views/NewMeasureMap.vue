@@ -313,17 +313,6 @@ label {
   color: black;
   border: 1px solid white;
 }
-.ol-tooltip-measure:before,
-.ol-tooltip-static:before {
-  border-top: 6px solid rgba(0, 0, 0, 0.5);
-  border-right: 6px solid transparent;
-  border-left: 6px solid transparent;
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  margin-left: -7px;
-  left: 50%;
-}
 
 .ol-tooltip-static:before {
   border-top-color: #ffcc33;
