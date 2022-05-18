@@ -23,17 +23,14 @@ import VectorSource from 'ol/source/Vector';
 import { Draw } from 'ol/interaction';
 import { Circle as CircleStyle, RegularShape, Fill, Stroke, Style, Text } from 'ol/style';
 import { getLength, getArea } from 'ol/sphere';
-import { Point } from 'ol/geom';
+import { Point, LineString } from 'ol/geom';
 
 export default {
   setup() {
     const mapContainer = shallowRef(null);
     const map = shallowRef(null);
 
-    const sketch = ref(false)
     const measureType = ref('LineString')
-    // const measureOutput = ref(null)
-    // const segmentOutput = ref(null)
     const showSegments = ref(true)
     const clearPrevious = ref(true)
     const startDrawingMsg = 'Click to start measuring'
@@ -98,6 +95,32 @@ export default {
       }),
     });
 
+    const segmentStyle = new Style({
+      text: new Text({
+        font: '12px Calibri,sans-serif',
+        fill: new Fill({
+          color: 'rgba(255, 255, 255, 1)',
+        }),
+        backgroundFill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+        padding: [2, 2, 2, 2],
+        textBaseline: 'bottom',
+        offsetY: -12,
+      }),
+      image: new RegularShape({
+        radius: 6,
+        points: 3,
+        angle: Math.PI,
+        displacement: [0, 8],
+        fill: new Fill({
+          color: 'rgba(0, 0, 0, 0.4)',
+        }),
+      }),
+    });
+
+    const segmentStyles = [segmentStyle];
+
     const formatLength = function (line) {
       const length = getLength(line);
       let output;
@@ -126,22 +149,37 @@ export default {
       styles.value = [style]
       const geometry = feature.getGeometry();
       const type = geometry.getType();
-      let measureOutput, measureOutputCoord;
+      let measureOutput, measureOutputCoord, segmentOutputCoord;
       if ( type === measureType.value ) {
         if (measureType.value === 'LineString') {
           measureOutput = formatLength(geometry)
           measureOutputCoord = new Point(geometry.getLastCoordinate())
-          // segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
+          segmentOutputCoord = geometry
         } else if (measureType.value === 'Polygon') {
           measureOutput = formatArea(geometry)
           measureOutputCoord = geometry.getInteriorPoint()
-          // segmentOutputCoord = geometry
+          segmentOutputCoord = new LineString(geometry.getCoordinates()[0])
         }
       }
       if (measureOutput) {
         outputStyle.setGeometry(measureOutputCoord);
         outputStyle.getText().setText(measureOutput);
         styles.value.push(outputStyle)
+      }
+      if (showSegments.value && segmentOutputCoord) {
+        let count = 0
+        segmentOutputCoord.forEachSegment(function (a, b) {
+          const segment = new LineString([a, b]);
+          const label = formatLength(segment);
+          if (segmentStyles.length - 1 < count) {
+            segmentStyles.push(segmentStyle.clone());
+          }
+          const segmentPoint = new Point(segment.getCoordinateAt(0.5));
+          segmentStyles[count].setGeometry(segmentPoint);
+          segmentStyles[count].getText().setText(label);
+          styles.value.push(segmentStyles[count]);
+          count++;
+        });
       }
       if ( hintMsg.value && type === 'Point') {
         hintStyle.getText().setText(hintMsg.value);
@@ -186,12 +224,10 @@ export default {
     })
 
     const drawStart = () => {
-      sketch.value = true
       hintMsg.value = continueMsg.value;
     }
 
     const drawEnd = () => {
-      sketch.value = false
       hintMsg.value = startDrawingMsg
     }
 

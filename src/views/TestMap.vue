@@ -18,7 +18,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Draw } from 'ol/interaction';
 import { Circle as CircleStyle, Fill, Stroke, Style, Text } from 'ol/style';
-import { Point } from 'ol/geom';
+// import { Point } from 'ol/geom';
 
 export default {
   setup() {
@@ -60,7 +60,7 @@ export default {
       const styles = [style]
       const geometry = feature.getGeometry();
       const type = geometry.getType();
-      const point = new Point(geometry.getLastCoordinate())
+      // const point = new Point(geometry.getLastCoordinate())
       switch (drawType.value) {
         case 'LineString':
           switch (type) {
@@ -68,9 +68,8 @@ export default {
               style.getText().setText('Drawing')
               break;
             case 'LineString':
-              console.log(point);
               // style.setGeometry(point)
-              style.getText().setText('')
+              style.getText().setText('Line')
               break;
           }
           break;
