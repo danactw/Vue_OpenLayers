@@ -6,6 +6,7 @@ import FeatureMap from '../views/FeatureMap.vue'
 import MeasureMap from '../views/MeasureMap.vue'
 import NewMeasureMap from '../views/NewMeasureMap.vue'
 import BaseMap from '../views/BaseMap.vue'
+import TestMap from '../views/TestMap.vue'
 
 const routes = [
   {
@@ -42,6 +43,11 @@ const routes = [
     path: '/basemap',
     name: 'BaseMap',
     component: BaseMap
+  },
+  {
+    path: '/testmap',
+    name: 'TestMap',
+    component: TestMap
   },
 ]
 
