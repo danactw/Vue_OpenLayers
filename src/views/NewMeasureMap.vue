@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { shallowRef, onMounted, markRaw, ref, computed, watch } from 'vue';
+import { shallowRef, onMounted, markRaw, ref, computed, watchEffect } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -72,19 +72,21 @@ export default {
       }),
     });
 
-    const outputStyle = new Style({
-      text: new Text({
-        font: '14px Calibri,sans-serif',
-        fill: new Fill({
-          color: 'rgba(255, 255, 255, 1)',
-        }),
-        backgroundFill: new Fill({
-          color: 'rgba(0, 0, 0, 0.7)',
-        }),
-        padding: [3, 3, 3, 3],
-        textBaseline: 'bottom',
-        offsetY: -15,
+    const outputText = new Text({
+      font: '14px Calibri,sans-serif',
+      fill: new Fill({
+        color: 'rgba(255, 255, 255, 1)',
       }),
+      backgroundFill: new Fill({
+        color: 'rgba(0, 0, 0, 0.7)',
+      }),
+      padding: [3, 3, 3, 3],
+      textBaseline: 'bottom',
+      offsetY: -15,
+    })
+
+    const outputStyle = new Style({
+      text: outputText,
       image: new RegularShape({
         radius: 8,
         points: 3,
@@ -138,7 +140,7 @@ export default {
       const geometry = feature.getGeometry();
       const type = geometry.getType();
       startMeasure(geometry)
-      if ( sketch.value ) {
+      if ( sketch.value && type === measureType.value) {
         const point = new Point(geometry.getLastCoordinate())
         outputStyle.setGeometry(point);
         outputStyle.getText().setText(measureOutput.value);
@@ -151,24 +153,56 @@ export default {
       return styles;
     }
 
-    const draw = computed(() =>
-      new Draw({
-        source: source,
-        type: measureType.value,
-        style: styleFunction
-      })
-    )
+    // const draw = computed(() =>
+    //   new Draw({
+    //     source: source,
+    //     type: measureType.value,
+    //     style: styleFunction
+    //   })
+    // )
+
+    const drawLine = new Draw({
+      source: source,
+      type: 'LineString',
+      style: styleFunction
+    })
+
+    const drawPolygon= new Draw({
+      source: source,
+      type: 'Polygon',
+      style: styleFunction
+    })
+
+    const drawStart = () => {
+      sketch.value = true
+      hintMsg.value = continueMsg.value;
+    }
+
+    const drawEnd = () => {
+      sketch.value = false
+      hintMsg.value = startDrawingMsg
+    }
+
+    const removeDraw = () => {
+      map.value.removeInteraction(drawLine)
+      map.value.removeInteraction(drawPolygon)
+    }
 
     function addInteraction() {
       hintMsg.value = startDrawingMsg;
-      draw.value.on('drawstart', () => {
-        sketch.value = true
-        hintMsg.value = continueMsg.value;
-      });
-      draw.value.on('drawend', () => {
-        sketch.value = false
-        hintMsg.value = startDrawingMsg
-      })
+      drawLine.on('drawstart', drawStart)
+      drawPolygon.on('drawstart', drawStart)
+      drawLine.on('drawend', drawEnd)
+      drawPolygon.on('drawend', drawEnd)
+      
+      // draw.value.on('drawstart', () => {
+      //   sketch.value = true
+      //   hintMsg.value = continueMsg.value;
+      // });
+      // draw.value.on('drawend', () => {
+      //   sketch.value = false
+      //   hintMsg.value = startDrawingMsg
+      // })
     }
 
     onMounted(() => {
@@ -181,13 +215,19 @@ export default {
         }),
       }))
 
-      map.value.addInteraction(draw.value)
-      addInteraction()
-      watch(() => measureType.value, () => {
-        map.value.removeInteraction(draw.value)
-        map.value.addInteraction(draw.value)
-        addInteraction()
+      // map.value.addInteraction(draw.value)
+      watchEffect(() => {
+        removeDraw()
+        switch (measureType.value) {
+          case 'LineString':
+            map.value.addInteraction(drawLine)
+            break;
+          case 'Polygon':
+            map.value.addInteraction(drawPolygon)
+            break;
+        }
       })
+      addInteraction()
 
     })
 
